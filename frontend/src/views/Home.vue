@@ -3,7 +3,7 @@
     <!-- 顶部导航 -->
     <div class="header">
       <div class="header-content">
-        <h1 class="logo">🧰 我的工具箱</h1>
+        <h1 class="logo">🧰 我的工具箱 v2.0</h1>
         <div class="tool-count">{{ tools.length }} 个工具</div>
       </div>
     </div>
@@ -51,7 +51,7 @@ const localTools = [
     name: 'XMind 转测试用例',
     icon: '🧪',
     category: '测试工具',
-    description: '将 XMind 思维导图一键转换为标准测试用例，支持 Excel 导出',
+    description: '将 XMind 思维导图一键转换为标准测试用例，支持 Excel/CSV 导出',
     route: '/tools/xmind',
     status: 'online'
   },
