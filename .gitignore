@@ -1,0 +1,14 @@
+﻿node_modules/
+target/
+__pycache__/
+*.pyc
+.env
+.DS_Store
+*.log
+*.class
+*.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+.idea/
+.vscode/
+*.iml
