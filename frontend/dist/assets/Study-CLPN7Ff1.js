@@ -1,1 +1,0 @@
-import{_ as s,o as a,c as o,a as t}from"./index-WIpiRsie.js";const _={class:"study-page"},n={__name:"Study",setup(c){return(l,e)=>(a(),o("div",_,[...e[0]||(e[0]=[t("h1",null,"我的学习",-1),t("p",null,"这里将展示我的学习历程、课程笔记、学习计划等。",-1),t("p",null,"待开发...",-1)])]))}},r=s(n,[["__scopeId","data-v-a4512451"]]);export{r as default};

@@ -1,1 +1,0 @@
-import{_ as t,o,c as a,a as e}from"./index-WIpiRsie.js";const n={class:"notes-page"},_={__name:"Notes",setup(c){return(l,s)=>(o(),a("div",n,[...s[0]||(s[0]=[e("h1",null,"我的笔记",-1),e("p",null,"这里将整理我的技术笔记、读书笔记、灵感记录等。",-1),e("p",null,"待开发...",-1)])]))}},r=t(_,[["__scopeId","data-v-9398570a"]]);export{r as default};

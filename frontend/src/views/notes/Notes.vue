@@ -1,7 +1,21 @@
 <template>
   <div class="notes-page">
-    <h1>我的笔记</h1>
-    <p>整理技术笔记、读书笔记、灵感记录，支持富文本编辑与分类管理。</p>
+    <div class="page-header">
+      <h1>我的笔记</h1>
+      <el-tooltip placement="right" effect="light">
+        <template #content>
+          <div class="info-tooltip-content">
+            <p><strong>功能说明：</strong></p>
+            <p>• 分类管理：左侧树形结构管理笔记分类</p>
+            <p>• 新建笔记：选择分类后点击新建按钮</p>
+            <p>• 编辑笔记：单击编辑按钮或双击笔记行</p>
+            <p>• 搜索功能：支持搜索标题、内容、标签</p>
+            <p>• 富文本编辑：支持多种格式和图片</p>
+          </div>
+        </template>
+        <el-icon class="info-icon" :size="18"><InfoFilled /></el-icon>
+      </el-tooltip>
+    </div>
 
     <el-row :gutter="20">
       <!-- 左侧分类树 -->
@@ -62,17 +76,24 @@
           <div v-if="!showEditor" class="notes-list">
             <div class="notes-header">
               <span>笔记列表 ({{ selectedCategoryName }})</span>
-              <div>
+              <div class="header-actions">
                 <el-input
                   v-model="searchKeyword"
-                  placeholder="搜索笔记标题或内容"
-                  style="width: 200px; margin-right: 10px;"
+                  placeholder="搜索标题、内容或标签"
+                  style="width: 250px; margin-right: 10px;"
+                  clearable
                   @keyup.enter="searchNotes"
-                />
+                  @clear="searchNotes"
+                >
+                  <template #prefix>
+                    <el-icon><Search /></el-icon>
+                  </template>
+                </el-input>
+                <el-button type="primary" @click="searchNotes" :icon="Search" style="margin-right: 10px;">搜索</el-button>
                 <el-button type="primary" @click="createNewNote" :icon="Plus">新建笔记</el-button>
               </div>
             </div>
-            <el-table :data="notes" border style="width: 100%" v-loading="notesLoading">
+            <el-table :data="notes" border style="width: 100%" v-loading="notesLoading" @row-dblclick="handleRowDblClick">
               <el-table-column prop="id" label="ID" width="80" />
               <el-table-column prop="title" label="标题" width="200" />
               <el-table-column prop="summary" label="摘要" />
@@ -125,7 +146,7 @@
                     v-model:content="noteForm.content"
                     contentType="html"
                     :options="editorOptions"
-                    style="height: 400px; margin-bottom: 20px;"
+                    style="height: 600px; margin-bottom: 20px;"
                   />
                 </el-form-item>
               </el-form>
@@ -166,7 +187,7 @@
 
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
-import { Plus, Edit, Delete } from '@element-plus/icons-vue'
+import { Plus, Edit, Delete, Search, InfoFilled } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { QuillEditor } from '@vueup/vue-quill'
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
@@ -443,6 +464,11 @@ const editNote = async (row) => {
   }
 }
 
+// 双击查看笔记
+const handleRowDblClick = (row) => {
+  editNote(row)
+}
+
 // 保存笔记
 const saveNote = async () => {
   if (!noteForm.title.trim()) {
@@ -514,6 +540,32 @@ onMounted(() => {
   padding: 20px;
 }
 
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.info-icon {
+  color: #909399;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+.info-icon:hover {
+  color: #409eff;
+}
+
+.info-tooltip-content {
+  max-width: 280px;
+  line-height: 1.8;
+}
+
+.info-tooltip-content p {
+  margin: 4px 0;
+}
+
 .category-panel {
   border: 1px solid #e4e7ed;
   border-radius: 4px;
@@ -560,6 +612,11 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
 }
 
 .editor-header {

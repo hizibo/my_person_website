@@ -1,13 +1,43 @@
 <template>
   <div class="plan-page">
-    <h1>我的计划</h1>
-    <p>这里管理我的待办事项，跟踪工作进度。</p>
+    <div class="page-header">
+      <h1>我的计划</h1>
+      <el-tooltip placement="right" effect="light">
+        <template #content>
+          <div class="info-tooltip-content">
+            <p><strong>功能说明：</strong></p>
+            <p>• 添加计划：输入标题和描述后点击添加按钮</p>
+            <p>• 编辑计划：点击编辑按钮修改计划内容</p>
+            <p>• 进度管理：点击修改按钮调整计划进度</p>
+            <p>• 搜索功能：输入关键词搜索计划标题或描述</p>
+          </div>
+        </template>
+        <el-icon class="info-icon" :size="18"><InfoFilled /></el-icon>
+      </el-tooltip>
+    </div>
 
     <!-- 添加计划表单 -->
     <div class="add-form">
       <el-input v-model="newPlan.title" placeholder="计划标题" style="width: 200px; margin-right: 10px;" />
       <el-input v-model="newPlan.description" placeholder="计划描述" style="width: 300px; margin-right: 10px;" />
       <el-button type="primary" @click="addPlan" :icon="Plus" :loading="adding">添加</el-button>
+    </div>
+
+    <!-- 搜索栏 -->
+    <div class="search-bar">
+      <el-input
+        v-model="searchKeyword"
+        placeholder="搜索计划标题或描述"
+        style="width: 300px; margin-right: 10px;"
+        clearable
+        @keyup.enter="searchPlans"
+        @clear="searchPlans"
+      >
+        <template #prefix>
+          <el-icon><Search /></el-icon>
+        </template>
+      </el-input>
+      <el-button type="primary" @click="searchPlans" :icon="Search">搜索</el-button>
     </div>
 
     <!-- 计划列表 -->
@@ -75,7 +105,7 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { Plus, Edit, Delete } from '@element-plus/icons-vue'
+import { Plus, Edit, Delete, Search, InfoFilled } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
 
@@ -86,6 +116,7 @@ const loading = ref(false)
 const adding = ref(false)
 const editing = ref(false)
 const updatingProgress = ref(false)
+const searchKeyword = ref('')
 
 // 新增计划表单
 const newPlan = reactive({
@@ -129,6 +160,38 @@ const fetchPlans = async () => {
   } catch (error) {
     console.error('获取计划列表失败:', error)
     ElMessage.error('获取计划列表失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 搜索计划
+const searchPlans = async () => {
+  if (!searchKeyword.value.trim()) {
+    await fetchPlans()
+    return
+  }
+  loading.value = true
+  try {
+    const response = await axios.get(`${API_BASE}/search`, {
+      params: { keyword: searchKeyword.value }
+    })
+    if (response.data && response.data.code === 200) {
+      plans.value = response.data.data
+    } else {
+      ElMessage.error('搜索失败')
+    }
+  } catch (error) {
+    console.error('搜索计划失败:', error)
+    // 如果搜索接口不存在，在前端过滤
+    const allPlans = await axios.get(`${API_BASE}/list`)
+    if (allPlans.data && allPlans.data.code === 200) {
+      const keyword = searchKeyword.value.toLowerCase()
+      plans.value = allPlans.data.data.filter(plan => 
+        plan.title.toLowerCase().includes(keyword) || 
+        plan.description.toLowerCase().includes(keyword)
+      )
+    }
   } finally {
     loading.value = false
   }
@@ -260,7 +323,39 @@ onMounted(() => {
   padding: 20px;
 }
 
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.info-icon {
+  color: #909399;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+.info-icon:hover {
+  color: #409eff;
+}
+
+.info-tooltip-content {
+  max-width: 280px;
+  line-height: 1.8;
+}
+
+.info-tooltip-content p {
+  margin: 4px 0;
+}
+
 .add-form {
+  margin: 20px 0;
+  display: flex;
+  align-items: center;
+}
+
+.search-bar {
   margin: 20px 0;
   display: flex;
   align-items: center;
