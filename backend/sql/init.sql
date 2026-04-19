@@ -61,3 +61,9 @@ INSERT INTO plan (title, description, progress, status) VALUES
 ('学习 Vue 3 高级特性', '深入学习 Composition API、状态管理等', 60, 'active'),
 ('Spring Boot 项目实战', '开发一个完整的 Spring Boot 微服务项目', 30, 'active'),
 ('准备软件测试面试', '复习测试理论、算法、项目经验', 50, 'active');
+
+-- 授权 root 用户可以从任意主机访问
+CREATE USER IF NOT EXISTS 'root'@'%' IDENTIFIED BY 'root';
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;
+ALTER USER 'root'@'%' IDENTIFIED WITH mysql_native_password BY 'root';
+FLUSH PRIVILEGES;
