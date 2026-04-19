@@ -49,4 +49,11 @@ public class PlanController {
         boolean success = planService.deletePlan(id);
         return success ? Result.success(true) : Result.error("删除失败");
     }
+
+    @GetMapping("/search")
+    @Operation(summary = "搜索计划")
+    public Result<List<Plan>> search(@RequestParam String keyword) {
+        List<Plan> plans = planService.searchPlans(keyword);
+        return Result.success(plans);
+    }
 }

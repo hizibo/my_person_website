@@ -27,4 +27,11 @@ public class PlanService extends ServiceImpl<PlanMapper, Plan> {
     public boolean deletePlan(Long id) {
         return this.removeById(id);
     }
+
+    public List<Plan> searchPlans(String keyword) {
+        LambdaQueryWrapper<Plan> wrapper = new LambdaQueryWrapper<>();
+        wrapper.like(Plan::getTitle, keyword).or().like(Plan::getDescription, keyword);
+        wrapper.orderByDesc(Plan::getCreateTime);
+        return this.list(wrapper);
+    }
 }
