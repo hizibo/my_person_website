@@ -1,9 +1,9 @@
 <template>
   <div class="personal-website">
     <div class="sidebar">
-      <h1 class="logo">个人网站</h1>
+      <h1 class="logo">赵子波的个人网站</h1>
       <nav class="nav">
-        <router-link to="/study" class="nav-item">我的学习</router-link>
+        <router-link to="/plan" class="nav-item">我的计划</router-link>
         <router-link to="/notes" class="nav-item">我的笔记</router-link>
         <router-link to="/website" class="nav-item">我的网站</router-link>
         <router-link to="/tools" class="nav-item">我的工具</router-link>

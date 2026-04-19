@@ -8,12 +8,12 @@ const routes = [
     children: [
       {
         path: '',
-        redirect: '/study' // 默认重定向到“我的学习”
+        redirect: '/plan' // 默认重定向到“我的计划”
       },
       {
-        path: 'study',
-        name: 'Study',
-        component: () => import('@/views/study/Study.vue')
+        path: 'plan',
+        name: 'Plan',
+        component: () => import('@/views/plan/Plan.vue')
       },
       {
         path: 'notes',

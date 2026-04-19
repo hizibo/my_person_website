@@ -41,3 +41,23 @@ CREATE TABLE IF NOT EXISTS tool_usage_log (
     INDEX idx_tool_id (tool_id),
     INDEX idx_create_time (create_time)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='工具使用记录';
+
+-- 计划表（我的计划）
+CREATE TABLE IF NOT EXISTS plan (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL COMMENT '计划标题',
+    description TEXT COMMENT '计划描述',
+    progress INT DEFAULT 0 COMMENT '进度(0-100)',
+    status VARCHAR(16) DEFAULT 'active' COMMENT '状态: active/completed/cancelled',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_status (status),
+    INDEX idx_create_time (create_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='计划表';
+
+-- 初始化一些示例计划
+INSERT INTO plan (title, description, progress, status) VALUES
+('完成个人网站开发', '搭建完整的个人网站，包括前端和后端', 80, 'active'),
+('学习 Vue 3 高级特性', '深入学习 Composition API、状态管理等', 60, 'active'),
+('Spring Boot 项目实战', '开发一个完整的 Spring Boot 微服务项目', 30, 'active'),
+('准备软件测试面试', '复习测试理论、算法、项目经验', 50, 'active');
