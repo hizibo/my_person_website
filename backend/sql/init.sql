@@ -62,6 +62,38 @@ INSERT INTO plan (title, description, progress, status) VALUES
 ('Spring Boot 项目实战', '开发一个完整的 Spring Boot 微服务项目', 30, 'active'),
 ('准备软件测试面试', '复习测试理论、算法、项目经验', 50, 'active');
 
+-- 笔记分类表
+CREATE TABLE IF NOT EXISTS note_category (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(128) NOT NULL COMMENT '分类名称',
+    parent_id BIGINT DEFAULT 0 COMMENT '父分类ID，0表示根分类',
+    sort INT DEFAULT 0 COMMENT '排序',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_parent_id (parent_id),
+    INDEX idx_sort (sort)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='笔记分类表';
+
+-- 笔记表
+CREATE TABLE IF NOT EXISTS note (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    category_id BIGINT NOT NULL COMMENT '分类ID',
+    title VARCHAR(255) NOT NULL COMMENT '笔记标题',
+    content LONGTEXT COMMENT '笔记内容（HTML格式）',
+    summary VARCHAR(512) COMMENT '摘要',
+    tags VARCHAR(255) COMMENT '标签，逗号分隔',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_category_id (category_id),
+    INDEX idx_create_time (create_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='笔记表';
+
+-- 初始化默认分类
+INSERT INTO note_category (name, parent_id, sort) VALUES
+('默认分类', 0, 1),
+('技术笔记', 0, 2),
+('生活随笔', 0, 3);
+
 -- 授权 root 用户可以从任意主机访问
 CREATE USER IF NOT EXISTS 'root'@'%' IDENTIFIED BY 'root';
 GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;
