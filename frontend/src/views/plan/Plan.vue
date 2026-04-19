@@ -79,7 +79,7 @@ import { Plus, Edit, Delete } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
 
-const API_BASE = 'http://localhost:8080/api/plan'
+const API_BASE = '/api/plan'
 
 const plans = ref([])
 const loading = ref(false)
