@@ -10,16 +10,9 @@ export default defineConfig({
     }
   },
   server: {
-    host: '0.0.0.0',
-    port: 5173,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8080',
-        changeOrigin: true
-      }
-    }
+    host: '127.0.0.1',
+    port: 5173
   },
-  // 禁用 CSS 相关处理避免 PostCSS 配置搜索问题
   css: {
     postcss: {
       plugins: []

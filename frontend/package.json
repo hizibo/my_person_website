@@ -1,9 +1,9 @@
-﻿{
+{
   "name": "my-toolbox-frontend",
   "version": "1.0.0",
   "description": "我的工具平台前端",
   "scripts": {
-    "dev": "vite --host 0.0.0.0 --port 5173",
+    "dev": "vite --host 127.0.0.1 --port 5173",
     "build": "vite build",
     "preview": "vite preview"
   },

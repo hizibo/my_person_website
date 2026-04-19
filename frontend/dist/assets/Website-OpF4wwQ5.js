@@ -1,0 +1,1 @@
+import{_ as t,o as a,c as o,a as e}from"./index-WIpiRsie.js";const c={class:"website-page"},_={__name:"Website",setup(n){return(l,s)=>(a(),o("div",c,[...s[0]||(s[0]=[e("h1",null,"我的网站",-1),e("p",null,"这里将展示我创建的个人网站、项目作品、技术博客等。",-1),e("p",null,"待开发...",-1)])]))}},r=t(_,[["__scopeId","data-v-f7cc3b5b"]]);export{r as default};
