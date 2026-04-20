@@ -1,4 +1,4 @@
-﻿-- 工具表
+-- 工具表
 CREATE TABLE IF NOT EXISTS sys_tool (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     tool_id VARCHAR(64) NOT NULL UNIQUE COMMENT '工具唯一标识',

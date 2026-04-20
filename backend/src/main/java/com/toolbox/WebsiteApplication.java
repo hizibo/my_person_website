@@ -1,4 +1,4 @@
-﻿package com.toolbox;
+package com.toolbox;
 
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
