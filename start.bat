@@ -1,7 +1,7 @@
 @echo off
 chcp 65001 >nul
 echo ========================================
-echo     我的工具箱 - Windows 启动脚本
+echo     我的网站 - Windows 启动脚本
 echo ========================================
 echo.
 
@@ -14,18 +14,18 @@ if %errorlevel% neq 0 (
 )
 
 echo [1/3] 启动 MySQL...
-docker run -d --name toolbox-mysql ^
+docker run -d --name website-mysql ^
   -e MYSQL_ROOT_PASSWORD=root ^
-  -e MYSQL_DATABASE=my_toolbox ^
+  -e MYSQL_DATABASE=my_website ^
   -p 3306:3306 ^
-  -v toolbox-mysql-data:/var/lib/mysql ^
+  -v website-mysql-data:/var/lib/mysql ^
   mysql:8.0 ^
   --character-set-server=utf8mb4 ^
   --collation-server=utf8mb4_unicode_ci
 
 echo [2/3] 初始化数据库...
 timeout /t 15 /nobreak >nul
-mysql -uroot -proot -h127.0.0.1 --default-character-set=utf8mb4 < backend\sql\init.sql 2>nul
+mysql -uroot -proot -h127.0.0.1 --default-character-set=utf8mb4 < backend\sql\init_database.sql 2>nul
 if %errorlevel% equ 0 (
     echo       数据库初始化完成
 ) else (

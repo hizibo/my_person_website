@@ -1,20 +1,20 @@
-version: '3.8'
+﻿version: '3.8'
 
 services:
   # MySQL 数据库
   mysql:
     image: mysql:8.0
-    container_name: toolbox-mysql
+    container_name: website-mysql
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: my_toolbox
+      MYSQL_DATABASE: my_website
       TZ: Asia/Shanghai
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./backend/sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./backend/sql/init_database.sql:/docker-entrypoint-initdb.d/init.sql
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --bind-address=0.0.0.0
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
@@ -27,12 +27,12 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: toolbox-backend
+    container_name: website-backend
     restart: unless-stopped
     ports:
       - "8080:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/my_toolbox?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/my_website?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
       JAVA_OPTS: "-Xmx256m -Xms128m"
@@ -45,7 +45,7 @@ services:
     build:
       context: ./python-services
       dockerfile: Dockerfile
-    container_name: toolbox-xmind
+    container_name: website-xmind
     restart: unless-stopped
     ports:
       - "8001:8001"
@@ -55,7 +55,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: toolbox-frontend
+    container_name: website-frontend
     restart: unless-stopped
     ports:
       - "80:80"

@@ -1,4 +1,4 @@
-package com.toolbox;
+﻿package com.toolbox;
 
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
@@ -8,9 +8,9 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 @SpringBootApplication
 @MapperScan("com.toolbox.mapper")
 @EnableAspectJAutoProxy
-public class ToolboxApplication {
+public class WebsiteApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(ToolboxApplication.class, args);
+        SpringApplication.run(WebsiteApplication.class, args);
     }
 }

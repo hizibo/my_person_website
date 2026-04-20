@@ -7,6 +7,7 @@
           <div class="info-tooltip-content">
             <p><strong>功能说明：</strong></p>
             <p>• 分类管理：左侧树形结构管理笔记分类</p>
+            <p>• 展开/收起：点击分类头部按钮切换全部展开/收起</p>
             <p>• 新建笔记：选择分类后点击新建按钮</p>
             <p>• 编辑笔记：单击编辑按钮或双击笔记行</p>
             <p>• 搜索功能：支持搜索标题、内容、标签</p>
@@ -23,23 +24,37 @@
         <div class="category-panel">
           <div class="category-header">
             <span>分类管理</span>
-            <el-button type="primary" size="small" @click="addCategoryDialogVisible = true" :icon="Plus">
-              新增
-            </el-button>
+            <div class="category-header-actions">
+              <el-button
+                size="small"
+                @click="toggleExpandAll"
+                :icon="allExpanded ? Fold : Expand"
+                :title="allExpanded ? '全部收起' : '全部展开'"
+              />
+              <el-button type="primary" size="small" @click="addCategoryDialogVisible = true" :icon="Plus">
+                新增
+              </el-button>
+            </div>
           </div>
           <el-tree
             ref="categoryTreeRef"
             :data="categoryTree"
             :props="{ label: 'name', children: 'children' }"
             node-key="id"
-            default-expand-all
             highlight-current
             :expand-on-click-node="false"
+            :default-expanded-keys="defaultExpandedKeys"
             @node-click="handleCategoryClick"
           >
             <template #default="{ node, data }">
               <span class="custom-tree-node">
-                <span>{{ node.label }}</span>
+                <span>
+                  <el-icon v-if="data.children && data.children.length" @click.stop="toggleNodeExpand(node)" style="cursor: pointer; margin-right: 4px;">
+                    <ArrowRight v-if="!node.expanded" />
+                    <ArrowDown v-else />
+                  </el-icon>
+                  {{ node.label }}
+                </span>
                 <span class="node-actions">
                   <el-button
                     link
@@ -187,7 +202,7 @@
 
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
-import { Plus, Edit, Delete, Search, InfoFilled } from '@element-plus/icons-vue'
+import { Plus, Edit, Delete, Search, InfoFilled, Expand, Fold, ArrowDown, ArrowRight } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { QuillEditor } from '@vueup/vue-quill'
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
@@ -200,6 +215,9 @@ const CATEGORY_API = '/api/note/category'
 const categoryTree = ref([])
 const categoryTreeRef = ref()
 const selectedCategoryId = ref(null)
+const allExpanded = ref(true)
+const defaultExpandedKeys = ref([])
+
 const selectedCategoryName = computed(() => {
   if (!selectedCategoryId.value) return '全部'
   const find = flatCategories.value.find(cat => cat.id === selectedCategoryId.value)
@@ -270,6 +288,48 @@ const flatCategories = computed(() => {
   return flatten(categoryTree.value)
 })
 
+// 获取所有节点 key
+const getAllNodeKeys = () => {
+  const keys = []
+  const collect = (nodes) => {
+    nodes.forEach(node => {
+      if (node.children && node.children.length > 0) {
+        keys.push(node.id)
+        collect(node.children)
+      }
+    })
+  }
+  collect(categoryTree.value)
+  return keys
+}
+
+// 切换全部展开/收起
+const toggleExpandAll = () => {
+  const tree = categoryTreeRef.value
+  if (!tree) return
+
+  if (allExpanded.value) {
+    // 收起全部
+    const nodes = tree.store._getAllNodes()
+    nodes.forEach(node => {
+      node.expanded = false
+    })
+    allExpanded.value = false
+  } else {
+    // 展开全部
+    const nodes = tree.store._getAllNodes()
+    nodes.forEach(node => {
+      node.expanded = true
+    })
+    allExpanded.value = true
+  }
+}
+
+// 切换单个节点展开/收起
+const toggleNodeExpand = (node) => {
+  node.expanded = !node.expanded
+}
+
 // 格式化日期
 const formatDate = (dateStr) => {
   if (!dateStr) return ''
@@ -298,6 +358,8 @@ const fetchCategories = async () => {
         }
       })
       categoryTree.value = tree
+      // 默认展开所有根节点
+      defaultExpandedKeys.value = getAllNodeKeys()
       // 默认选择第一个分类
       if (tree.length > 0 && !selectedCategoryId.value) {
         selectedCategoryId.value = tree[0].id
@@ -579,6 +641,12 @@ onMounted(() => {
   align-items: center;
   margin-bottom: 10px;
   font-weight: bold;
+}
+
+.category-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .custom-tree-node {

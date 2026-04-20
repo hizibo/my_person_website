@@ -31,14 +31,14 @@ if ($dockerExists) {
         $servicesSkipped += "MySQL"
     } else {
         Write-Host "[1] 检查 MySQL 容器..." -ForegroundColor Yellow
-        $mysqlContainer = docker ps -q -f name=toolbox-mysql
+        $mysqlContainer = docker ps -q -f name=website-mysql
         if (-not $mysqlContainer) {
             Write-Host "   启动 MySQL 容器..." -ForegroundColor Gray
-            docker run -d --name toolbox-mysql `
+            docker run -d --name website-mysql `
                 -e MYSQL_ROOT_PASSWORD=root `
-                -e MYSQL_DATABASE=my_toolbox `
+                -e MYSQL_DATABASE=my_website `
                 -p 3306:3306 `
-                -v toolbox-mysql-data:/var/lib/mysql `
+                -v website-mysql-data:/var/lib/mysql `
                 mysql:8.0 `
                 --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
             Start-Sleep -Seconds 10  # 等待 MySQL 完全启动

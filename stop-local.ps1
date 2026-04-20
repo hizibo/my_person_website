@@ -45,8 +45,8 @@ if (Test-Path $pythonPidFile) {
 
 # 停止 MySQL 容器（可选，默认保留）
 Write-Host "[4/4] MySQL 容器..." -ForegroundColor Yellow
-Write-Host "   容器默认保留，如需停止请执行: docker stop toolbox-mysql" -ForegroundColor Gray
-Write-Host "   如需删除容器: docker rm -f toolbox-mysql" -ForegroundColor Gray
+Write-Host "   容器默认保留，如需停止请执行: docker stop website-mysql" -ForegroundColor Gray
+Write-Host "   如需删除容器: docker rm -f website-mysql" -ForegroundColor Gray
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan

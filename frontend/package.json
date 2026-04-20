@@ -1,7 +1,7 @@
 {
-  "name": "my-toolbox-frontend",
+  "name": "my-website-frontend",
   "version": "1.0.0",
-  "description": "我的工具平台前端",
+  "description": "我的个人网站前端",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 5173",
     "build": "vite build",

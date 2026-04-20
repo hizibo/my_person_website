@@ -1,4 +1,4 @@
-# my-toolbox 部署说明
+# my-website 部署说明
 
 ## 部署方式
 
@@ -42,42 +42,58 @@ npm run build
 # 2. 打包项目（排除 node_modules）
 cd C:\Users\zhaoz\.qclaw\workspace\my-toolbox
 # 使用 PowerShell 打包
-Compress-Archive -Path backend,frontend\dist,python-services,docker-compose.yml,archive -DestinationPath my-toolbox.zip -Force
+Compress-Archive -Path backend,frontend\dist,python-services,docker-compose.yml,archive -DestinationPath my-website.zip -Force
 
 # 3. 上传到服务器并解压
-scp my-toolbox.zip root@175.178.98.241:/tmp/
-ssh root@175.178.98.241 "cd /opt && rm -rf my-toolbox && unzip -o /tmp/my-toolbox.zip -d my-toolbox && cd my-toolbox && docker compose up -d --build"
+scp my-website.zip root@175.178.98.241:/tmp/
+ssh root@175.178.98.241 "cd /opt && rm -rf my-toolbox && unzip -o /tmp/my-website.zip -d my-toolbox && cd my-toolbox && docker compose up -d --build"
 ```
 
 ## 本次更新内容
 
 **日期**: 2026-04-20
 
+### 项目重命名
+
+1. **my-toolbox → my-website**
+   - 项目名称、数据库、容器名全部更新
+   - README.md 重写
+
 ### 功能更新
 
-1. **补充说明提示图标**
-   - 在计划页和笔记页标题旁添加小 i 图标
-   - 鼠标悬停显示详细功能说明
+1. **数据库迁移改为 Flyway 增量模式**
+   - 引入 Flyway 管理数据库版本
+   - 迁移脚本位于 backend/src/main/resources/db/migration/
+   - 不再每次部署重建表结构
 
-2. **搜索功能完善**
-   - 计划页新增搜索功能（支持搜索标题和描述）
-   - 笔记页搜索功能优化（支持搜索标题、内容、标签）
-   - 添加搜索图标和清除按钮
+2. **笔记页分类展开/收起功能**
+   - 分类树支持展开/收起切换
+   - 头部增加全部展开/收起按钮
+   - 默认展开所有分类
 
-3. **富文本编辑器优化**
-   - 编辑器默认高度从 400px 增加到 600px
-   - 提供更好的编辑体验
+3. **计划页搜索复用新增框**
+   - 搜索和新增合并为一行
+   - 删除额外的搜索栏
+   - 搜索按钮放在添加按钮后面
 
-4. **双击查看笔记**
-   - 在笔记列表中双击任意行可快速打开编辑
-   - 提升操作效率
+4. **清理冗余代码**
+   - 删除 NotesController.java（模拟数据，已被 NoteController 替代）
+   - 删除旧的 init.sql（由 Flyway 接管）
 
 ### 修改的文件
 
-- `frontend/src/views/plan/Plan.vue` - 添加搜索功能和提示图标
-- `frontend/src/views/notes/Notes.vue` - 完善搜索、双击编辑、编辑器高度调整
-- `archive/scripts/deploy.sh` - 部署脚本
-- `archive/DEPLOY.md` - 部署说明文档
+- `backend/pom.xml` - 添加 Flyway 依赖，更新项目名
+- `backend/src/main/resources/application.yml` - 数据库名、Flyway 配置
+- `backend/src/main/resources/db/migration/V1__init_schema.sql` - Flyway 初始迁移
+- `backend/src/main/resources/db/migration/V2__rename_project.sql` - 改名记录
+- `backend/sql/init_database.sql` - Docker 初始化脚本
+- `backend/src/main/java/com/toolbox/WebsiteApplication.java` - 主类重命名
+- `frontend/package.json` - 项目名更新
+- `frontend/src/views/notes/Notes.vue` - 分类展开/收起
+- `frontend/src/views/plan/Plan.vue` - 搜索复用新增框
+- `frontend/src/views/Home.vue` - 标题更新
+- `docker-compose.yml` - 容器名、数据库名
+- `README.md` - 项目说明重写
 
 ## 服务器信息
 

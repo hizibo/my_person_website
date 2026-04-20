@@ -1,9 +1,4 @@
--- 创建数据库
-CREATE DATABASE IF NOT EXISTS my_toolbox DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
-USE my_toolbox;
-
--- 工具表
+﻿-- 工具表
 CREATE TABLE IF NOT EXISTS sys_tool (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     tool_id VARCHAR(64) NOT NULL UNIQUE COMMENT '工具唯一标识',
@@ -29,7 +24,7 @@ INSERT INTO sys_tool (tool_id, name, icon, category, description, route, backend
 ('mock-server', 'Mock 服务器', '🎭', '开发工具', '快速搭建本地 Mock 服务', '/tools/mock', '/api/tool/mock', 'dev', 3),
 ('db-client', '数据库客户端', '💾', '开发工具', '轻量级数据库查询工具', '/tools/db', '/api/tool/db', 'dev', 4);
 
--- 使用记录表（可选）
+-- 使用记录表
 CREATE TABLE IF NOT EXISTS tool_usage_log (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     tool_id VARCHAR(64) NOT NULL COMMENT '工具ID',
@@ -55,7 +50,7 @@ CREATE TABLE IF NOT EXISTS plan (
     INDEX idx_create_time (create_time)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='计划表';
 
--- 初始化一些示例计划
+-- 初始化示例计划
 INSERT INTO plan (title, description, progress, status) VALUES
 ('完成个人网站开发', '搭建完整的个人网站，包括前端和后端', 80, 'active'),
 ('学习 Vue 3 高级特性', '深入学习 Composition API、状态管理等', 60, 'active'),
@@ -93,9 +88,3 @@ INSERT INTO note_category (name, parent_id, sort) VALUES
 ('默认分类', 0, 1),
 ('技术笔记', 0, 2),
 ('生活随笔', 0, 3);
-
--- 授权 root 用户可以从任意主机访问
-CREATE USER IF NOT EXISTS 'root'@'%' IDENTIFIED BY 'root';
-GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;
-ALTER USER 'root'@'%' IDENTIFIED WITH mysql_native_password BY 'root';
-FLUSH PRIVILEGES;

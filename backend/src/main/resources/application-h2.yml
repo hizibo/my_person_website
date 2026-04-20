@@ -3,14 +3,14 @@ server:
 
 spring:
   application:
-    name: my-toolbox
+    name: my-website
   servlet:
     multipart:
       max-file-size: 50MB
       max-request-size: 50MB
   datasource:
     driver-class-name: org.h2.Driver
-    url: jdbc:h2:mem:my_toolbox;DB_CLOSE_DELAY=-1;MODE=MySQL
+    url: jdbc:h2:mem:my_website;DB_CLOSE_DELAY=-1;MODE=MySQL
     username: sa
     password:
   h2:

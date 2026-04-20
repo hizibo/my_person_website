@@ -1,6 +1,6 @@
-# 🧰 我的工具箱
+# 🌐 我的网站
 
-个人工具平台，持续上架实用小工具。
+个人网站平台，持续建设实用功能。
 
 ## 🚀 快速启动
 
@@ -18,33 +18,28 @@ docker-compose logs -f
 
 **1. 启动 MySQL**
 ```bash
-docker run -d --name toolbox-mysql \
+docker run -d --name website-mysql \
   -e MYSQL_ROOT_PASSWORD=root \
-  -e MYSQL_DATABASE=my_toolbox \
+  -e MYSQL_DATABASE=my_website \
   -p 3306:3306 \
   mysql:8.0 \
   --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
 ```
 
-**2. 初始化数据库**
-```bash
-mysql -uroot -proot -h127.0.0.1 < backend/sql/init.sql
-```
-
-**3. 启动 Python 服务**
+**2. 启动 Python 服务**
 ```bash
 cd python-services
 pip install -r requirements.txt
 uvicorn xmind_parser.main:app --reload --port 8001
 ```
 
-**4. 启动 Spring Boot 后端**
+**3. 启动 Spring Boot 后端**
 ```bash
 cd backend
 mvn spring-boot:run
 ```
 
-**5. 启动 Vue 前端**
+**4. 启动 Vue 前端**
 ```bash
 cd frontend
 npm install
@@ -56,13 +51,14 @@ npm run dev
 ## 📁 项目结构
 
 ```
-my-toolbox/
+my-website/
 ├── frontend/          # Vue 3 前端
 │   ├── src/
 │   │   ├── views/    # 页面组件
-│   │   │   ├── Home.vue           # 首页（工具列表）
-│   │   │   └── tools/
-│   │   │       └── XmindTool.vue  # XMind工具
+│   │   │   ├── plan/Plan.vue          # 我的计划
+│   │   │   ├── notes/Notes.vue        # 我的笔记
+│   │   │   ├── website/Website.vue    # 网站管理
+│   │   │   └── tools/                 # 工具集
 │   │   └── router/
 │   └── package.json
 │
@@ -72,8 +68,7 @@ my-toolbox/
 │   │   ├── service/      # 业务逻辑
 │   │   ├── entity/       # 数据模型
 │   │   └── mapper/       # 数据访问
-│   ├── sql/
-│   │   └── init.sql      # 数据库初始化
+│   ├── src/main/resources/db/migration/  # Flyway 数据库迁移脚本
 │   └── pom.xml
 │
 ├── python-services/   # Python 微服务
@@ -84,39 +79,48 @@ my-toolbox/
 └── docker-compose.yml  # 容器编排
 ```
 
+## 🗄️ 数据库迁移
+
+项目使用 Flyway 管理数据库版本，迁移脚本位于 `backend/src/main/resources/db/migration/`。
+
+- 首次启动自动执行所有迁移
+- 后续更新只需新增迁移脚本（如 `V3__add_new_table.sql`）
+- **不再每次部署重建表结构**
+
 ## 🧪 XMind 转测试用例
 
 上传 `.xmind` 文件，自动转换为标准测试用例，支持 Excel 导出。
 
-## ➕ 添加新工具
+## ➕ 添加新功能
 
-添加新工具只需 3 步：
+添加新功能只需 3 步：
 
 **1. 后端添加 Controller**
 ```java
-// backend/src/main/java/com/toolbox/controller/新工具Controller.java
+// backend/src/main/java/com/toolbox/controller/新功能Controller.java
 @RestController
-@RequestMapping("/api/tool/新工具")
-public class NewToolController {
+@RequestMapping("/api/新功能")
+public class NewFeatureController {
     // 实现业务逻辑
 }
 ```
 
 **2. 前端添加页面**
 ```vue
-// frontend/src/views/tools/NewTool.vue
+// frontend/src/views/新功能/NewFeature.vue
 <template>...</template>
 ```
 
 **3. 注册路由**
 ```js
 // frontend/src/router/index.js
-{ path: '/tools/new', component: () => import('@/views/tools/NewTool.vue') }
+{ path: '/new-feature', component: () => import('@/views/新功能/NewFeature.vue') }
 ```
 
-**4. 数据库添加记录**（可选）
+**4. 数据库迁移**（如需新表）
 ```sql
-INSERT INTO sys_tool (tool_id, name, ...) VALUES ('new_tool', '新工具', ...);
+-- backend/src/main/resources/db/migration/V3__add_new_table.sql
+CREATE TABLE IF NOT EXISTS ...
 ```
 
 ## 🔧 技术栈
@@ -124,7 +128,7 @@ INSERT INTO sys_tool (tool_id, name, ...) VALUES ('new_tool', '新工具', ...);
 | 层级 | 技术 |
 |------|------|
 | 前端 | Vue 3 + Vite + Element Plus |
-| 后端 | Spring Boot 3 + MyBatis-Plus |
+| 后端 | Spring Boot 3 + MyBatis-Plus + Flyway |
 | 数据库 | MySQL 8 |
 | Python服务 | FastAPI |
 | 部署 | Docker + Docker Compose |

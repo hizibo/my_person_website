@@ -3,7 +3,7 @@
     <!-- 顶部导航 -->
     <div class="header">
       <div class="header-content">
-        <h1 class="logo">🧰 我的工具箱 v2.0</h1>
+        <h1 class="logo">🌐 我的网站</h1>
         <div class="tool-count">{{ tools.length }} 个工具</div>
       </div>
     </div>

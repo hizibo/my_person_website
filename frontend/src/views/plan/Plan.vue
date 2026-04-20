@@ -9,35 +9,19 @@
             <p>• 添加计划：输入标题和描述后点击添加按钮</p>
             <p>• 编辑计划：点击编辑按钮修改计划内容</p>
             <p>• 进度管理：点击修改按钮调整计划进度</p>
-            <p>• 搜索功能：输入关键词搜索计划标题或描述</p>
+            <p>• 搜索功能：输入关键词后点击搜索按钮</p>
           </div>
         </template>
         <el-icon class="info-icon" :size="18"><InfoFilled /></el-icon>
       </el-tooltip>
     </div>
 
-    <!-- 添加计划表单 -->
+    <!-- 添加计划 / 搜索（合并一行） -->
     <div class="add-form">
-      <el-input v-model="newPlan.title" placeholder="计划标题" style="width: 200px; margin-right: 10px;" />
-      <el-input v-model="newPlan.description" placeholder="计划描述" style="width: 300px; margin-right: 10px;" />
+      <el-input v-model="newPlan.title" placeholder="计划标题 / 搜索关键词" style="width: 200px; margin-right: 10px;" clearable />
+      <el-input v-model="newPlan.description" placeholder="计划描述" style="width: 300px; margin-right: 10px;" clearable />
       <el-button type="primary" @click="addPlan" :icon="Plus" :loading="adding">添加</el-button>
-    </div>
-
-    <!-- 搜索栏 -->
-    <div class="search-bar">
-      <el-input
-        v-model="searchKeyword"
-        placeholder="搜索计划标题或描述"
-        style="width: 300px; margin-right: 10px;"
-        clearable
-        @keyup.enter="searchPlans"
-        @clear="searchPlans"
-      >
-        <template #prefix>
-          <el-icon><Search /></el-icon>
-        </template>
-      </el-input>
-      <el-button type="primary" @click="searchPlans" :icon="Search">搜索</el-button>
+      <el-button @click="searchPlans" :icon="Search" :loading="searching">搜索</el-button>
     </div>
 
     <!-- 计划列表 -->
@@ -116,9 +100,9 @@ const loading = ref(false)
 const adding = ref(false)
 const editing = ref(false)
 const updatingProgress = ref(false)
-const searchKeyword = ref('')
+const searching = ref(false)
 
-// 新增计划表单
+// 新增计划表单（标题输入框同时作为搜索关键词）
 const newPlan = reactive({
   title: '',
   description: ''
@@ -165,16 +149,17 @@ const fetchPlans = async () => {
   }
 }
 
-// 搜索计划
+// 搜索计划（复用 newPlan.title 作为关键词）
 const searchPlans = async () => {
-  if (!searchKeyword.value.trim()) {
+  const keyword = newPlan.title.trim()
+  if (!keyword) {
     await fetchPlans()
     return
   }
-  loading.value = true
+  searching.value = true
   try {
     const response = await axios.get(`${API_BASE}/search`, {
-      params: { keyword: searchKeyword.value }
+      params: { keyword }
     })
     if (response.data && response.data.code === 200) {
       plans.value = response.data.data
@@ -183,17 +168,17 @@ const searchPlans = async () => {
     }
   } catch (error) {
     console.error('搜索计划失败:', error)
-    // 如果搜索接口不存在，在前端过滤
+    // 如果搜索接口异常，在前端过滤
     const allPlans = await axios.get(`${API_BASE}/list`)
     if (allPlans.data && allPlans.data.code === 200) {
-      const keyword = searchKeyword.value.toLowerCase()
-      plans.value = allPlans.data.data.filter(plan => 
-        plan.title.toLowerCase().includes(keyword) || 
-        plan.description.toLowerCase().includes(keyword)
+      const kw = keyword.toLowerCase()
+      plans.value = allPlans.data.data.filter(plan =>
+        plan.title.toLowerCase().includes(kw) ||
+        plan.description.toLowerCase().includes(kw)
       )
     }
   } finally {
-    loading.value = false
+    searching.value = false
   }
 }
 
@@ -350,12 +335,6 @@ onMounted(() => {
 }
 
 .add-form {
-  margin: 20px 0;
-  display: flex;
-  align-items: center;
-}
-
-.search-bar {
   margin: 20px 0;
   display: flex;
   align-items: center;
