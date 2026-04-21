@@ -1,15 +1,11 @@
 <template>
   <div class="tools-page">
-    <!-- 顶部导航 -->
-    <div class="header">
-      <div class="header-content">
-        <h1 class="logo">🧰 我的工具</h1>
-        <div class="tool-count">{{ tools.length }} 个工具</div>
-      </div>
-    </div>
-
     <!-- 工具分类 -->
     <div class="container">
+      <div v-if="tools.length === 0 && !loading" class="empty-wrapper">
+        <el-empty description="暂无工具，请联系管理员添加" />
+      </div>
+
       <div v-for="(group, category) in groupedTools" :key="category" class="category">
         <h2 class="category-title">{{ category }}</h2>
         <div class="tool-grid">
@@ -29,9 +25,6 @@
           </div>
         </div>
       </div>
-
-      <!-- 空状态 -->
-      <el-empty v-if="tools.length === 0" description="暂无工具，请联系管理员添加" />
     </div>
   </div>
 </template>
@@ -43,8 +36,8 @@ import axios from 'axios'
 
 const router = useRouter()
 const tools = ref([])
+const loading = ref(true)
 
-// 初始工具数据（本地数据，等后端接口开发后替换）
 const localTools = [
   {
     id: 'xmind2case',
@@ -72,12 +65,13 @@ onMounted(async () => {
     if (res.data.code === 200) {
       tools.value = res.data.data
     } else {
-      // 后端未启动时使用本地数据
       tools.value = localTools
     }
   } catch (e) {
     console.log('后端未启动，使用本地数据')
     tools.value = localTools
+  } finally {
+    loading.value = false
   }
 })
 
@@ -103,87 +97,119 @@ const goTool = (tool) => {
   height: 100%;
 }
 
-.header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 40px 0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.header-content {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.logo {
-  font-size: 28px;
-  font-weight: 600;
-}
-
-.tool-count {
-  font-size: 14px;
-  opacity: 0.9;
-}
-
 .container {
   max-width: 1200px;
-  margin: 40px auto;
-  padding: 0 20px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.empty-wrapper {
+  padding: 60px 0;
 }
 
 .category {
-  margin-bottom: 40px;
+  margin-bottom: 32px;
 }
 
 .category-title {
-  font-size: 20px;
+  font-size: 18px;
   color: #333;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   padding-left: 12px;
   border-left: 4px solid #667eea;
 }
 
 .tool-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
+  /* PC: 3列; 平板: 2列; 手机: 1列 */
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
 }
 
 .tool-card {
   background: white;
   border-radius: 12px;
-  padding: 24px;
+  padding: 20px;
   cursor: pointer;
   transition: all 0.3s ease;
   border: 1px solid #eee;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
+  min-height: 100px;
 }
 
 .tool-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
   border-color: #667eea;
 }
 
 .tool-icon {
-  font-size: 40px;
+  font-size: 36px;
+  line-height: 1;
 }
 
 .tool-name {
-  font-size: 18px;
+  font-size: 16px;
   color: #333;
   font-weight: 600;
+  margin: 0;
 }
 
 .tool-desc {
-  font-size: 14px;
+  font-size: 13px;
   color: #999;
-  line-height: 1.6;
+  line-height: 1.5;
+  margin: 0;
+  flex: 1;
+}
+
+/* ========== 响应式：平板 ========== */
+@media screen and (max-width: 1024px) {
+  .tool-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .container {
+    padding: 12px;
+  }
+}
+
+/* ========== 响应式：手机 ========== */
+@media screen and (max-width: 768px) {
+  .tool-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .container {
+    padding: 10px;
+  }
+
+  .category-title {
+    font-size: 16px;
+  }
+
+  .tool-card {
+    padding: 16px;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .tool-icon {
+    font-size: 28px;
+    flex-shrink: 0;
+  }
+
+  .tool-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .tool-name {
+    font-size: 15px;
+  }
 }
 </style>

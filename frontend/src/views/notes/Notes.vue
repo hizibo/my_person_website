@@ -1,7 +1,7 @@
 <template>
   <div class="notes-page">
     <div class="page-header">
-      <h1>我的笔记</h1>
+      <h1 class="page-title">我的笔记</h1>
       <el-tooltip placement="right" effect="light">
         <template #content>
           <div class="info-tooltip-content">
@@ -18,34 +18,25 @@
       </el-tooltip>
     </div>
 
-    <el-row :gutter="20">
+    <!-- 移动端分类切换按钮 -->
+    <div class="mobile-category-toggle">
+      <el-button @click="showMobileCategory = !showMobileCategory" size="small">
+        {{ showMobileCategory ? '收起分类' : '展开分类' }}
+      </el-button>
+    </div>
+
+    <el-row :gutter="20" class="notes-row">
       <!-- 左侧分类树 -->
-      <el-col :span="6">
-        <div class="category-panel">
+      <el-col :xs="24" :sm="24" :md="6" :lg="6" class="category-col">
+        <div class="category-panel" :class="{ 'mobile-show': showMobileCategory }">
           <div class="category-header">
-            <span>分类管理</span>
+            <span class="category-header-title">分类管理</span>
             <div class="category-header-actions">
-              <el-button
-                size="small"
-                @click="toggleExpandAll"
-                :icon="allExpanded ? Fold : Expand"
-                :title="allExpanded ? '全部收起' : '全部展开'"
-              />
-              <el-button type="primary" size="small" @click="addCategoryDialogVisible = true" :icon="Plus">
-                新增
-              </el-button>
+              <el-button size="small" @click="toggleExpandAll" :icon="allExpanded ? Fold : Expand" :title="allExpanded ? '全部收起' : '全部展开'" />
+              <el-button type="primary" size="small" @click="addCategoryDialogVisible = true" :icon="Plus">新增</el-button>
             </div>
           </div>
-          <el-tree
-            ref="categoryTreeRef"
-            :data="categoryTree"
-            :props="{ label: 'name', children: 'children' }"
-            node-key="id"
-            highlight-current
-            :expand-on-click-node="false"
-            :default-expanded-keys="defaultExpandedKeys"
-            @node-click="handleCategoryClick"
-          >
+          <el-tree ref="categoryTreeRef" :data="categoryTree" :props="{ label: 'name', children: 'children' }" node-key="id" highlight-current :expand-on-click-node="false" :default-expanded-keys="defaultExpandedKeys" @node-click="handleCategoryClick">
             <template #default="{ node, data }">
               <span class="custom-tree-node">
                 <span>
@@ -56,27 +47,9 @@
                   {{ node.label }}
                 </span>
                 <span class="node-actions">
-                  <el-button
-                    link
-                    type="primary"
-                    size="small"
-                    @click.stop="addChildCategory(data)"
-                    :icon="Plus"
-                  ></el-button>
-                  <el-button
-                    link
-                    type="primary"
-                    size="small"
-                    @click.stop="editCategory(data)"
-                    :icon="Edit"
-                  ></el-button>
-                  <el-button
-                    link
-                    type="danger"
-                    size="small"
-                    @click.stop="deleteCategory(data)"
-                    :icon="Delete"
-                  ></el-button>
+                  <el-button link type="primary" size="small" @click.stop="addChildCategory(data)" :icon="Plus"></el-button>
+                  <el-button link type="primary" size="small" @click.stop="editCategory(data)" :icon="Edit"></el-button>
+                  <el-button link type="danger" size="small" @click.stop="deleteCategory(data)" :icon="Delete"></el-button>
                 </span>
               </span>
             </template>
@@ -85,69 +58,59 @@
       </el-col>
 
       <!-- 右侧笔记列表/编辑器 -->
-      <el-col :span="18">
+      <el-col :xs="24" :sm="24" :md="18" :lg="18" class="notes-col">
         <div class="notes-panel">
           <!-- 笔记列表 -->
           <div v-if="!showEditor" class="notes-list">
             <div class="notes-header">
-              <span>笔记列表 ({{ selectedCategoryName }})</span>
+              <span class="notes-header-title">{{ selectedCategoryName }} ({{ notes.length }})</span>
               <div class="header-actions">
-                <el-input
-                  v-model="searchKeyword"
-                  placeholder="搜索标题、内容或标签"
-                  style="width: 250px; margin-right: 10px;"
-                  clearable
-                  @keyup.enter="searchNotes"
-                  @clear="searchNotes"
-                >
+                <el-input v-model="searchKeyword" placeholder="搜索..." style="width: 150px; margin-right: 8px;" clearable @keyup.enter="searchNotes" @clear="searchNotes">
                   <template #prefix>
                     <el-icon><Search /></el-icon>
                   </template>
                 </el-input>
-                <el-button type="primary" @click="searchNotes" :icon="Search" style="margin-right: 10px;">搜索</el-button>
-                <el-button type="primary" @click="createNewNote" :icon="Plus">新建笔记</el-button>
+                <el-button type="primary" @click="searchNotes" :icon="Search" size="small" class="action-btn">搜索</el-button>
+                <el-button type="primary" @click="createNewNote" :icon="Plus" size="small" class="action-btn">新建</el-button>
               </div>
             </div>
-            <el-table :data="notes" border style="width: 100%" v-loading="notesLoading" @row-dblclick="handleRowDblClick">
-              <el-table-column prop="id" label="ID" width="80" />
-              <el-table-column prop="title" label="标题" width="200" />
-              <el-table-column prop="summary" label="摘要" />
-              <el-table-column prop="createTime" label="创建时间" width="180">
-                <template #default="{ row }">
-                  {{ formatDate(row.createTime) }}
-                </template>
-              </el-table-column>
-              <el-table-column label="操作" width="180">
-                <template #default="{ row }">
-                  <el-button size="small" @click="editNote(row)" :icon="Edit">编辑</el-button>
-                  <el-button size="small" type="danger" @click="deleteNote(row.id)" :icon="Delete">删除</el-button>
-                </template>
-              </el-table-column>
-            </el-table>
+            <div class="table-wrapper">
+              <el-table :data="notes" border style="width: 100%" v-loading="notesLoading" @row-dblclick="handleRowDblClick" size="small">
+                <el-table-column prop="id" label="ID" width="60" />
+                <el-table-column prop="title" label="标题" min-width="120" />
+                <el-table-column prop="summary" label="摘要" min-width="150" show-overflow-tooltip />
+                <el-table-column prop="createTime" label="创建时间" width="150">
+                  <template #default="{ row }">
+                    {{ formatDate(row.createTime) }}
+                  </template>
+                </el-table-column>
+                <el-table-column label="操作" width="140" fixed="right">
+                  <template #default="{ row }">
+                    <el-button size="small" @click="editNote(row)" :icon="Edit">编辑</el-button>
+                    <el-button size="small" type="danger" @click="deleteNote(row.id)" :icon="Delete">删除</el-button>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
           </div>
 
           <!-- 笔记编辑器 -->
           <div v-else class="note-editor">
             <div class="editor-header">
-              <span>{{ editingNoteId ? '编辑笔记' : '新建笔记' }}</span>
-              <div>
-                <el-button @click="cancelEdit">取消</el-button>
-                <el-button type="primary" @click="saveNote" :loading="savingNote">保存</el-button>
+              <span class="editor-title">{{ editingNoteId ? '编辑笔记' : '新建笔记' }}</span>
+              <div class="editor-actions">
+                <el-button size="small" @click="cancelEdit">取消</el-button>
+                <el-button type="primary" size="small" @click="saveNote" :loading="savingNote">保存</el-button>
               </div>
             </div>
             <div class="editor-form">
-              <el-form :model="noteForm" label-width="80px">
+              <el-form :model="noteForm" label-width="70px" size="small">
                 <el-form-item label="标题" required>
                   <el-input v-model="noteForm.title" placeholder="请输入笔记标题" />
                 </el-form-item>
                 <el-form-item label="分类">
                   <el-select v-model="noteForm.categoryId" placeholder="选择分类" style="width: 100%;">
-                    <el-option
-                      v-for="cat in flatCategories"
-                      :key="cat.id"
-                      :label="cat.name"
-                      :value="cat.id"
-                    />
+                    <el-option v-for="cat in flatCategories" :key="cat.id" :label="cat.name" :value="cat.id" />
                   </el-select>
                 </el-form-item>
                 <el-form-item label="标签">
@@ -157,12 +120,7 @@
                   <el-input v-model="noteForm.summary" type="textarea" rows="2" placeholder="请输入摘要" />
                 </el-form-item>
                 <el-form-item label="内容" required>
-                  <QuillEditor
-                    v-model:content="noteForm.content"
-                    contentType="html"
-                    :options="editorOptions"
-                    style="height: 600px; margin-bottom: 20px;"
-                  />
+                  <QuillEditor v-model:content="noteForm.content" contentType="html" :options="editorOptions" class="quill-editor-mobile" />
                 </el-form-item>
               </el-form>
             </div>
@@ -172,7 +130,7 @@
     </el-row>
 
     <!-- 分类对话框 -->
-    <el-dialog v-model="addCategoryDialogVisible" :title="editingCategory ? '编辑分类' : '新增分类'" width="400">
+    <el-dialog v-model="addCategoryDialogVisible" :title="editingCategory ? '编辑分类' : '新增分类'" width="400" append-to-body>
       <el-form :model="categoryForm" label-width="80px">
         <el-form-item label="分类名称" required>
           <el-input v-model="categoryForm.name" />
@@ -180,12 +138,7 @@
         <el-form-item label="父分类">
           <el-select v-model="categoryForm.parentId" placeholder="根分类" clearable style="width: 100%;">
             <el-option label="根分类" :value="0" />
-            <el-option
-              v-for="cat in flatCategories"
-              :key="cat.id"
-              :label="cat.name"
-              :value="cat.id"
-            />
+            <el-option v-for="cat in flatCategories" :key="cat.id" :label="cat.name" :value="cat.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="排序">
@@ -210,6 +163,9 @@ import axios from 'axios'
 
 const API_BASE = '/api/note'
 const CATEGORY_API = '/api/note/category'
+
+// 移动端分类面板显示状态
+const showMobileCategory = ref(false)
 
 // 分类树
 const categoryTree = ref([])
@@ -261,7 +217,6 @@ const editorOptions = {
       [{ 'list': 'ordered' }, { 'list': 'bullet' }],
       [{ 'script': 'sub' }, { 'script': 'super' }],
       [{ 'indent': '-1' }, { 'indent': '+1' }],
-      [{ 'direction': 'rtl' }],
       [{ 'size': ['small', false, 'large', 'huge'] }],
       [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
       [{ 'color': [] }, { 'background': [] }],
@@ -274,7 +229,7 @@ const editorOptions = {
   placeholder: '请输入笔记内容...'
 }
 
-// 扁平化分类列表（用于下拉选择）
+// 扁平化分类列表
 const flatCategories = computed(() => {
   const flatten = (nodes, result = []) => {
     nodes.forEach(node => {
@@ -307,25 +262,18 @@ const getAllNodeKeys = () => {
 const toggleExpandAll = () => {
   const tree = categoryTreeRef.value
   if (!tree) return
-
   if (allExpanded.value) {
-    // 收起全部
     const nodes = tree.store._getAllNodes()
-    nodes.forEach(node => {
-      node.expanded = false
-    })
+    nodes.forEach(node => { node.expanded = false })
     allExpanded.value = false
   } else {
-    // 展开全部
     const nodes = tree.store._getAllNodes()
-    nodes.forEach(node => {
-      node.expanded = true
-    })
+    nodes.forEach(node => { node.expanded = true })
     allExpanded.value = true
   }
 }
 
-// 切换单个节点展开/收起
+// 切换单个节点
 const toggleNodeExpand = (node) => {
   node.expanded = !node.expanded
 }
@@ -343,24 +291,15 @@ const fetchCategories = async () => {
     const response = await axios.get(`${CATEGORY_API}/list`)
     if (response.data && response.data.code === 200) {
       const categories = response.data.data
-      // 构建树形结构
       const map = {}
       const tree = []
+      categories.forEach(cat => { cat.children = []; map[cat.id] = cat })
       categories.forEach(cat => {
-        cat.children = []
-        map[cat.id] = cat
-      })
-      categories.forEach(cat => {
-        if (cat.parentId === 0 || !map[cat.parentId]) {
-          tree.push(cat)
-        } else {
-          map[cat.parentId].children.push(cat)
-        }
+        if (cat.parentId === 0 || !map[cat.parentId]) { tree.push(cat) }
+        else { map[cat.parentId].children.push(cat) }
       })
       categoryTree.value = tree
-      // 默认展开所有根节点
       defaultExpandedKeys.value = getAllNodeKeys()
-      // 默认选择第一个分类
       if (tree.length > 0 && !selectedCategoryId.value) {
         selectedCategoryId.value = tree[0].id
         fetchNotesByCategory(tree[0].id)
@@ -376,10 +315,7 @@ const fetchCategories = async () => {
 
 // 保存分类
 const saveCategory = async () => {
-  if (!categoryForm.name.trim()) {
-    ElMessage.warning('请输入分类名称')
-    return
-  }
+  if (!categoryForm.name.trim()) { ElMessage.warning('请输入分类名称'); return }
   savingCategory.value = true
   try {
     const api = editingCategory.value ? `${CATEGORY_API}/update` : `${CATEGORY_API}/add`
@@ -400,213 +336,118 @@ const saveCategory = async () => {
   }
 }
 
-// 重置分类表单
 const resetCategoryForm = () => {
-  categoryForm.name = ''
-  categoryForm.parentId = 0
-  categoryForm.sort = 0
-  editingCategory.value = null
+  categoryForm.name = ''; categoryForm.parentId = 0; categoryForm.sort = 0; editingCategory.value = null
 }
 
-// 添加子分类
 const addChildCategory = (parentData) => {
-  resetCategoryForm()
-  categoryForm.parentId = parentData.id
-  addCategoryDialogVisible.value = true
+  resetCategoryForm(); categoryForm.parentId = parentData.id; addCategoryDialogVisible.value = true
 }
 
-// 编辑分类
 const editCategory = (data) => {
-  editingCategory.value = data.id
-  categoryForm.name = data.name
-  categoryForm.parentId = data.parentId || 0
-  categoryForm.sort = data.sort || 0
-  addCategoryDialogVisible.value = true
+  editingCategory.value = data.id; categoryForm.name = data.name; categoryForm.parentId = data.parentId || 0; categoryForm.sort = data.sort || 0; addCategoryDialogVisible.value = true
 }
 
-// 删除分类
 const deleteCategory = async (data) => {
   try {
-    await ElMessageBox.confirm(`确定删除分类 "${data.name}" 吗？`, '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
+    await ElMessageBox.confirm(`确定删除分类 "${data.name}" 吗？`, '提示', { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' })
     const response = await axios.delete(`${CATEGORY_API}/delete/${data.id}`)
-    if (response.data && response.data.code === 200) {
-      ElMessage.success('删除成功')
-      await fetchCategories()
-    } else {
-      ElMessage.error(response.data.msg || '删除失败')
-    }
+    if (response.data && response.data.code === 200) { ElMessage.success('删除成功'); await fetchCategories() }
+    else { ElMessage.error(response.data.msg || '删除失败') }
   } catch (error) {
-    if (error !== 'cancel') {
-      console.error('删除分类失败:', error)
-      ElMessage.error('删除失败')
-    }
+    if (error !== 'cancel') { console.error('删除分类失败:', error); ElMessage.error('删除失败') }
   }
 }
 
-// 分类点击事件
-const handleCategoryClick = (data) => {
-  selectedCategoryId.value = data.id
-  fetchNotesByCategory(data.id)
-}
+const handleCategoryClick = (data) => { selectedCategoryId.value = data.id; fetchNotesByCategory(data.id) }
 
-// 获取分类下的笔记
 const fetchNotesByCategory = async (categoryId) => {
   notesLoading.value = true
   try {
     const response = await axios.get(`${API_BASE}/category/${categoryId}`)
-    if (response.data && response.data.code === 200) {
-      notes.value = response.data.data
-    } else {
-      ElMessage.error('获取笔记列表失败')
-    }
+    if (response.data && response.data.code === 200) { notes.value = response.data.data }
+    else { ElMessage.error('获取笔记列表失败') }
   } catch (error) {
-    console.error('获取笔记列表失败:', error)
-    ElMessage.error('获取笔记列表失败')
+    console.error('获取笔记列表失败:', error); ElMessage.error('获取笔记列表失败')
   } finally {
     notesLoading.value = false
   }
 }
 
-// 搜索笔记
 const searchNotes = async () => {
-  if (!searchKeyword.value.trim()) {
-    fetchNotesByCategory(selectedCategoryId.value)
-    return
-  }
+  if (!searchKeyword.value.trim()) { fetchNotesByCategory(selectedCategoryId.value); return }
   notesLoading.value = true
   try {
     const response = await axios.get(`${API_BASE}/search?keyword=${encodeURIComponent(searchKeyword.value)}`)
-    if (response.data && response.data.code === 200) {
-      notes.value = response.data.data
-    } else {
-      ElMessage.error('搜索失败')
-    }
+    if (response.data && response.data.code === 200) { notes.value = response.data.data }
+    else { ElMessage.error('搜索失败') }
   } catch (error) {
-    console.error('搜索笔记失败:', error)
-    ElMessage.error('搜索笔记失败')
+    console.error('搜索笔记失败:', error); ElMessage.error('搜索失败')
   } finally {
     notesLoading.value = false
   }
 }
 
-// 创建新笔记
 const createNewNote = () => {
-  editingNoteId.value = null
-  noteForm.title = ''
-  noteForm.categoryId = selectedCategoryId.value
-  noteForm.content = ''
-  noteForm.summary = ''
-  noteForm.tags = ''
-  showEditor.value = true
+  editingNoteId.value = null; noteForm.title = ''; noteForm.categoryId = selectedCategoryId.value; noteForm.content = ''; noteForm.summary = ''; noteForm.tags = ''; showEditor.value = true
 }
 
-// 编辑笔记
 const editNote = async (row) => {
   try {
     const response = await axios.get(`${API_BASE}/detail/${row.id}`)
     if (response.data && response.data.code === 200) {
       const note = response.data.data
-      editingNoteId.value = note.id
-      noteForm.title = note.title
-      noteForm.categoryId = note.categoryId
-      noteForm.content = note.content || ''
-      noteForm.summary = note.summary || ''
-      noteForm.tags = note.tags || ''
-      showEditor.value = true
-    } else {
-      ElMessage.error('获取笔记详情失败')
-    }
-  } catch (error) {
-    console.error('获取笔记详情失败:', error)
-    ElMessage.error('获取笔记详情失败')
-  }
+      editingNoteId.value = note.id; noteForm.title = note.title; noteForm.categoryId = note.categoryId; noteForm.content = note.content || ''; noteForm.summary = note.summary || ''; noteForm.tags = note.tags || ''; showEditor.value = true
+    } else { ElMessage.error('获取笔记详情失败') }
+  } catch (error) { console.error('获取笔记详情失败:', error); ElMessage.error('获取笔记详情失败') }
 }
 
-// 双击查看笔记
-const handleRowDblClick = (row) => {
-  editNote(row)
-}
+const handleRowDblClick = (row) => { editNote(row) }
 
-// 保存笔记
 const saveNote = async () => {
-  if (!noteForm.title.trim()) {
-    ElMessage.warning('请输入笔记标题')
-    return
-  }
-  if (!noteForm.content.trim()) {
-    ElMessage.warning('请输入笔记内容')
-    return
-  }
+  if (!noteForm.title.trim()) { ElMessage.warning('请输入笔记标题'); return }
+  if (!noteForm.content.trim()) { ElMessage.warning('请输入笔记内容'); return }
   savingNote.value = true
   try {
     const api = editingNoteId.value ? `${API_BASE}/update` : `${API_BASE}/add`
-    const response = await axios[editingNoteId.value ? 'put' : 'post'](api, {
-      ...noteForm,
-      id: editingNoteId.value
-    })
+    const response = await axios[editingNoteId.value ? 'put' : 'post'](api, { ...noteForm, id: editingNoteId.value })
     if (response.data && response.data.code === 200) {
-      ElMessage.success(editingNoteId.value ? '更新成功' : '添加成功')
-      showEditor.value = false
-      await fetchNotesByCategory(selectedCategoryId.value)
-    } else {
-      ElMessage.error(response.data.msg || '保存失败')
-    }
-  } catch (error) {
-    console.error('保存笔记失败:', error)
-    ElMessage.error('保存笔记失败')
-  } finally {
-    savingNote.value = false
-  }
+      ElMessage.success(editingNoteId.value ? '更新成功' : '添加成功'); showEditor.value = false; await fetchNotesByCategory(selectedCategoryId.value)
+    } else { ElMessage.error(response.data.msg || '保存失败') }
+  } catch (error) { console.error('保存笔记失败:', error); ElMessage.error('保存失败') }
+  finally { savingNote.value = false }
 }
 
-// 取消编辑
-const cancelEdit = () => {
-  showEditor.value = false
-}
+const cancelEdit = () => { showEditor.value = false }
 
-// 删除笔记
 const deleteNote = async (id) => {
   try {
-    await ElMessageBox.confirm('确定删除该笔记吗？', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
+    await ElMessageBox.confirm('确定删除该笔记吗？', '提示', { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' })
     const response = await axios.delete(`${API_BASE}/delete/${id}`)
-    if (response.data && response.data.code === 200) {
-      ElMessage.success('删除成功')
-      await fetchNotesByCategory(selectedCategoryId.value)
-    } else {
-      ElMessage.error(response.data.msg || '删除失败')
-    }
-  } catch (error) {
-    if (error !== 'cancel') {
-      console.error('删除笔记失败:', error)
-      ElMessage.error('删除失败')
-    }
-  }
+    if (response.data && response.data.code === 200) { ElMessage.success('删除成功'); await fetchNotesByCategory(selectedCategoryId.value) }
+    else { ElMessage.error(response.data.msg || '删除失败') }
+  } catch (error) { if (error !== 'cancel') { console.error('删除笔记失败:', error); ElMessage.error('删除失败') } }
 }
 
-// 初始化
-onMounted(() => {
-  fetchCategories()
-})
+onMounted(() => { fetchCategories() })
 </script>
 
 <style scoped>
 .notes-page {
-  padding: 20px;
+  padding: 16px;
 }
 
 .page-header {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+}
+
+.page-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
 }
 
 .info-icon {
@@ -628,11 +469,30 @@ onMounted(() => {
   margin: 4px 0;
 }
 
+/* 移动端分类切换按钮 */
+.mobile-category-toggle {
+  display: none;
+  margin-bottom: 12px;
+}
+
+.notes-row {
+  display: flex;
+}
+
+/* 分类列 */
+.category-col {
+  flex-shrink: 0;
+}
+
 .category-panel {
   border: 1px solid #e4e7ed;
-  border-radius: 4px;
-  padding: 10px;
+  border-radius: 8px;
+  padding: 12px;
   background: #fff;
+  position: sticky;
+  top: 0;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
 }
 
 .category-header {
@@ -640,7 +500,13 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.category-header-title {
   font-weight: bold;
+  font-size: 14px;
 }
 
 .category-header-actions {
@@ -654,8 +520,8 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 14px;
-  padding-right: 8px;
+  font-size: 13px;
+  padding-right: 4px;
 }
 
 .node-actions {
@@ -667,36 +533,164 @@ onMounted(() => {
   opacity: 1;
 }
 
+/* 笔记列 */
+.notes-col {
+  flex: 1;
+  min-width: 0;
+}
+
 .notes-panel {
   border: 1px solid #e4e7ed;
-  border-radius: 4px;
-  padding: 20px;
+  border-radius: 8px;
+  padding: 16px;
   background: #fff;
-  min-height: 600px;
+  min-height: 400px;
 }
 
 .notes-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.notes-header-title {
+  font-weight: bold;
+  font-size: 14px;
 }
 
 .header-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
+.table-wrapper {
+  overflow-x: auto;
+}
+
+/* 编辑器 */
 .editor-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   border-bottom: 1px solid #e4e7ed;
   padding-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.editor-title {
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.editor-actions {
+  display: flex;
+  gap: 8px;
 }
 
 .editor-form {
-  margin-top: 20px;
+  margin-top: 12px;
+}
+
+/* Quill 编辑器高度 */
+.quill-editor-mobile {
+  height: 400px;
+  margin-bottom: 20px;
+}
+
+/* ========== 响应式：平板 ========== */
+@media screen and (max-width: 1024px) {
+  .notes-page {
+    padding: 12px;
+  }
+
+  .category-panel {
+    max-height: calc(100vh - 100px);
+  }
+
+  .quill-editor-mobile {
+    height: 350px;
+  }
+}
+
+/* ========== 响应式：手机 ========== */
+@media screen and (max-width: 768px) {
+  .notes-page {
+    padding: 10px;
+  }
+
+  .page-header {
+    margin-bottom: 12px;
+  }
+
+  .page-title {
+    font-size: 16px;
+  }
+
+  .mobile-category-toggle {
+    display: block;
+  }
+
+  .category-col {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 0 0 100% !important;
+    margin-bottom: 12px;
+  }
+
+  .category-panel {
+    position: static;
+    max-height: none;
+    display: none;
+  }
+
+  .category-panel.mobile-show {
+    display: block;
+  }
+
+  .notes-col {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 0 0 100% !important;
+  }
+
+  .notes-panel {
+    padding: 12px;
+  }
+
+  .notes-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .header-actions {
+    width: 100%;
+  }
+
+  .header-actions .el-input {
+    flex: 1;
+  }
+
+  .editor-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .quill-editor-mobile {
+    height: 300px;
+  }
+}
+
+/* ========== 响应式：小手机 ========== */
+@media screen and (max-width: 480px) {
+  .quill-editor-mobile {
+    height: 250px;
+  }
 }
 </style>

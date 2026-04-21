@@ -1,7 +1,7 @@
 <template>
   <div class="plan-page">
     <div class="page-header">
-      <h1>我的计划</h1>
+      <h1 class="page-title">我的计划</h1>
       <el-tooltip placement="right" effect="light">
         <template #content>
           <div class="info-tooltip-content">
@@ -16,72 +16,74 @@
       </el-tooltip>
     </div>
 
-    <!-- 添加计划 / 搜索（合并一行） -->
+    <!-- 添加计划 / 搜索 -->
     <div class="add-form">
-      <el-input v-model="newPlan.title" placeholder="计划标题 / 搜索关键词" style="width: 200px; margin-right: 10px;" clearable />
-      <el-input v-model="newPlan.description" placeholder="计划描述" style="width: 300px; margin-right: 10px;" clearable />
+      <el-input v-model="newPlan.title" placeholder="计划标题 / 搜索关键词" class="input-title" clearable />
+      <el-input v-model="newPlan.description" placeholder="计划描述" class="input-desc" clearable />
       <el-button type="primary" @click="addPlan" :icon="Plus" :loading="adding">添加</el-button>
       <el-button @click="searchPlans" :icon="Search" :loading="searching">搜索</el-button>
     </div>
 
     <!-- 计划列表 -->
     <div class="plan-list">
-      <el-table :data="plans" style="width: 100%" border v-loading="loading">
-        <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="title" label="标题" width="180" />
-        <el-table-column prop="description" label="描述" />
-        <el-table-column label="进度" width="200">
-          <template #default="{ row }">
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <el-progress :percentage="row.progress" :stroke-width="10" :show-text="false" style="flex: 1;" />
-              <span style="min-width: 40px;">{{ row.progress }}%</span>
-              <el-button size="small" @click="editProgress(row)" :icon="Edit">修改</el-button>
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" width="180">
-          <template #default="{ row }">
-            {{ formatDate(row.createTime) }}
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="180">
-          <template #default="{ row }">
-            <el-button size="small" @click="editPlan(row)" :icon="Edit">编辑</el-button>
-            <el-button size="small" type="danger" @click="deletePlan(row.id)" :icon="Delete">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+      <div class="table-wrapper">
+        <el-table :data="plans" style="width: 100%" border v-loading="loading" size="small">
+          <el-table-column prop="id" label="ID" width="60" />
+          <el-table-column prop="title" label="标题" min-width="120" />
+          <el-table-column prop="description" label="描述" min-width="150" show-overflow-tooltip />
+          <el-table-column label="进度" width="200">
+            <template #default="{ row }">
+              <div class="progress-cell">
+                <el-progress :percentage="row.progress" :stroke-width="8" :show-text="false" class="progress-bar" />
+                <span class="progress-text">{{ row.progress }}%</span>
+                <el-button size="small" @click="editProgress(row)" :icon="Edit" class="progress-btn">改</el-button>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column prop="createTime" label="创建时间" width="150">
+            <template #default="{ row }">
+              {{ formatDate(row.createTime) }}
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="120" fixed="right">
+            <template #default="{ row }">
+              <el-button size="small" @click="editPlan(row)" :icon="Edit">编辑</el-button>
+              <el-button size="small" type="danger" @click="deletePlan(row.id)" :icon="Delete">删</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
     </div>
 
     <!-- 编辑计划对话框 -->
-    <el-dialog v-model="editDialogVisible" title="编辑计划" width="500">
-      <el-form :model="editForm" label-width="80px">
+    <el-dialog v-model="editDialogVisible" :title="editingCategory ? '编辑分类' : '编辑计划'" width="500" append-to-body>
+      <el-form :model="editForm" label-width="70px" size="small">
         <el-form-item label="标题">
           <el-input v-model="editForm.title" />
         </el-form-item>
         <el-form-item label="描述">
-          <el-input v-model="editForm.description" type="textarea" />
+          <el-input v-model="editForm.description" type="textarea" :rows="3" />
         </el-form-item>
         <el-form-item label="进度">
-          <el-slider v-model="editForm.progress" show-input />
+          <el-slider v-model="editForm.progress" show-input :step="5" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="editDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="saveEdit" :loading="editing">保存</el-button>
+        <el-button @click="editDialogVisible = false" size="small">取消</el-button>
+        <el-button type="primary" @click="saveEdit" :loading="editing" size="small">保存</el-button>
       </template>
     </el-dialog>
 
     <!-- 修改进度对话框 -->
-    <el-dialog v-model="progressDialogVisible" title="修改进度" width="400">
-      <el-form :model="progressForm" label-width="80px">
+    <el-dialog v-model="progressDialogVisible" title="修改进度" width="350" append-to-body>
+      <el-form :model="progressForm" label-width="60px" size="small">
         <el-form-item label="进度">
-          <el-slider v-model="progressForm.progress" show-input />
+          <el-slider v-model="progressForm.progress" show-input :step="5" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="progressDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="saveProgress" :loading="updatingProgress">保存</el-button>
+        <el-button @click="progressDialogVisible = false" size="small">取消</el-button>
+        <el-button type="primary" @click="saveProgress" :loading="updatingProgress" size="small">保存</el-button>
       </template>
     </el-dialog>
   </div>
@@ -101,80 +103,50 @@ const adding = ref(false)
 const editing = ref(false)
 const updatingProgress = ref(false)
 const searching = ref(false)
+const editingCategory = ref(false)
 
-// 新增计划表单（标题输入框同时作为搜索关键词）
-const newPlan = reactive({
-  title: '',
-  description: ''
-})
+const newPlan = reactive({ title: '', description: '' })
 
-// 编辑对话框
 const editDialogVisible = ref(false)
-const editForm = reactive({
-  id: null,
-  title: '',
-  description: '',
-  progress: 0
-})
+const editForm = reactive({ id: null, title: '', description: '', progress: 0 })
 
-// 进度对话框
 const progressDialogVisible = ref(false)
-const progressForm = reactive({
-  id: null,
-  progress: 0
-})
+const progressForm = reactive({ id: null, progress: 0 })
 
-// 格式化日期
 const formatDate = (dateStr) => {
   if (!dateStr) return ''
   const date = new Date(dateStr)
   return date.toLocaleDateString('zh-CN') + ' ' + date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
 }
 
-// 获取计划列表
 const fetchPlans = async () => {
   loading.value = true
   try {
     const response = await axios.get(`${API_BASE}/list`)
-    if (response.data && response.data.code === 200) {
-      plans.value = response.data.data
-    } else {
-      ElMessage.error('获取计划列表失败')
-    }
+    if (response.data && response.data.code === 200) { plans.value = response.data.data }
+    else { ElMessage.error('获取计划列表失败') }
   } catch (error) {
-    console.error('获取计划列表失败:', error)
-    ElMessage.error('获取计划列表失败')
+    console.error('获取计划列表失败:', error); ElMessage.error('获取计划列表失败')
   } finally {
     loading.value = false
   }
 }
 
-// 搜索计划（复用 newPlan.title 作为关键词）
 const searchPlans = async () => {
   const keyword = newPlan.title.trim()
-  if (!keyword) {
-    await fetchPlans()
-    return
-  }
+  if (!keyword) { await fetchPlans(); return }
   searching.value = true
   try {
-    const response = await axios.get(`${API_BASE}/search`, {
-      params: { keyword }
-    })
-    if (response.data && response.data.code === 200) {
-      plans.value = response.data.data
-    } else {
-      ElMessage.error('搜索失败')
-    }
+    const response = await axios.get(`${API_BASE}/search`, { params: { keyword } })
+    if (response.data && response.data.code === 200) { plans.value = response.data.data }
+    else { ElMessage.error('搜索失败') }
   } catch (error) {
     console.error('搜索计划失败:', error)
-    // 如果搜索接口异常，在前端过滤
     const allPlans = await axios.get(`${API_BASE}/list`)
     if (allPlans.data && allPlans.data.code === 200) {
       const kw = keyword.toLowerCase()
       plans.value = allPlans.data.data.filter(plan =>
-        plan.title.toLowerCase().includes(kw) ||
-        plan.description.toLowerCase().includes(kw)
+        plan.title.toLowerCase().includes(kw) || plan.description.toLowerCase().includes(kw)
       )
     }
   } finally {
@@ -182,137 +154,72 @@ const searchPlans = async () => {
   }
 }
 
-// 添加计划
 const addPlan = async () => {
-  if (!newPlan.title.trim()) {
-    ElMessage.warning('请输入标题')
-    return
-  }
+  if (!newPlan.title.trim()) { ElMessage.warning('请输入标题'); return }
   adding.value = true
   try {
-    const planData = {
-      title: newPlan.title,
-      description: newPlan.description,
-      progress: 0,
-      status: 'active'
-    }
-    const response = await axios.post(`${API_BASE}/add`, planData)
+    const response = await axios.post(`${API_BASE}/add`, { title: newPlan.title, description: newPlan.description, progress: 0, status: 'active' })
     if (response.data && response.data.code === 200) {
-      ElMessage.success('添加成功')
-      newPlan.title = ''
-      newPlan.description = ''
-      await fetchPlans()
-    } else {
-      ElMessage.error(response.data.msg || '添加失败')
-    }
-  } catch (error) {
-    console.error('添加计划失败:', error)
-    ElMessage.error('添加计划失败')
-  } finally {
-    adding.value = false
-  }
+      ElMessage.success('添加成功'); newPlan.title = ''; newPlan.description = ''; await fetchPlans()
+    } else { ElMessage.error(response.data.msg || '添加失败') }
+  } catch (error) { console.error('添加计划失败:', error); ElMessage.error('添加计划失败') }
+  finally { adding.value = false }
 }
 
-// 编辑计划
-const editPlan = (row) => {
-  editForm.id = row.id
-  editForm.title = row.title
-  editForm.description = row.description
-  editForm.progress = row.progress
-  editDialogVisible.value = true
-}
+const editPlan = (row) => { editForm.id = row.id; editForm.title = row.title; editForm.description = row.description; editForm.progress = row.progress; editDialogVisible.value = true }
 
-// 保存编辑
 const saveEdit = async () => {
   editing.value = true
   try {
     const response = await axios.put(`${API_BASE}/update`, editForm)
-    if (response.data && response.data.code === 200) {
-      ElMessage.success('更新成功')
-      editDialogVisible.value = false
-      await fetchPlans()
-    } else {
-      ElMessage.error(response.data.msg || '更新失败')
-    }
-  } catch (error) {
-    console.error('更新计划失败:', error)
-    ElMessage.error('更新计划失败')
-  } finally {
-    editing.value = false
-  }
+    if (response.data && response.data.code === 200) { ElMessage.success('更新成功'); editDialogVisible.value = false; await fetchPlans() }
+    else { ElMessage.error(response.data.msg || '更新失败') }
+  } catch (error) { console.error('更新计划失败:', error); ElMessage.error('更新计划失败') }
+  finally { editing.value = false }
 }
 
-// 修改进度
-const editProgress = (row) => {
-  progressForm.id = row.id
-  progressForm.progress = row.progress
-  progressDialogVisible.value = true
-}
+const editProgress = (row) => { progressForm.id = row.id; progressForm.progress = row.progress; progressDialogVisible.value = true }
 
-// 保存进度
 const saveProgress = async () => {
   updatingProgress.value = true
   try {
-    const planData = {
-      id: progressForm.id,
-      progress: progressForm.progress
-    }
-    const response = await axios.put(`${API_BASE}/update`, planData)
-    if (response.data && response.data.code === 200) {
-      ElMessage.success('进度已更新')
-      progressDialogVisible.value = false
-      await fetchPlans()
-    } else {
-      ElMessage.error(response.data.msg || '更新失败')
-    }
-  } catch (error) {
-    console.error('更新进度失败:', error)
-    ElMessage.error('更新进度失败')
-  } finally {
-    updatingProgress.value = false
-  }
+    const response = await axios.put(`${API_BASE}/update`, { id: progressForm.id, progress: progressForm.progress })
+    if (response.data && response.data.code === 200) { ElMessage.success('进度已更新'); progressDialogVisible.value = false; await fetchPlans() }
+    else { ElMessage.error(response.data.msg || '更新失败') }
+  } catch (error) { console.error('更新进度失败:', error); ElMessage.error('更新进度失败') }
+  finally { updatingProgress.value = false }
 }
 
-// 删除计划
 const deletePlan = (id) => {
-  ElMessageBox.confirm('确定删除该计划吗？', '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(async () => {
-    try {
-      const response = await axios.delete(`${API_BASE}/delete/${id}`)
-      if (response.data && response.data.code === 200) {
-        ElMessage.success('删除成功')
-        await fetchPlans()
-      } else {
-        ElMessage.error(response.data.msg || '删除失败')
-      }
-    } catch (error) {
-      console.error('删除计划失败:', error)
-      ElMessage.error('删除计划失败')
-    }
-  }).catch(() => {
-    // 取消
-  })
+  ElMessageBox.confirm('确定删除该计划吗？', '提示', { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' })
+    .then(async () => {
+      try {
+        const response = await axios.delete(`${API_BASE}/delete/${id}`)
+        if (response.data && response.data.code === 200) { ElMessage.success('删除成功'); await fetchPlans() }
+        else { ElMessage.error(response.data.msg || '删除失败') }
+      } catch (error) { console.error('删除计划失败:', error); ElMessage.error('删除计划失败') }
+    }).catch(() => {})
 }
 
-// 初始化
-onMounted(() => {
-  fetchPlans()
-})
+onMounted(() => { fetchPlans() })
 </script>
 
 <style scoped>
 .plan-page {
-  padding: 20px;
+  padding: 16px;
 }
 
 .page-header {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 10px;
+  margin-bottom: 16px;
+}
+
+.page-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
 }
 
 .info-icon {
@@ -335,12 +242,79 @@ onMounted(() => {
 }
 
 .add-form {
-  margin: 20px 0;
+  margin: 16px 0;
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.input-title {
+  width: 180px !important;
+}
+
+.input-desc {
+  flex: 1;
+  min-width: 150px;
 }
 
 .plan-list {
-  margin-top: 30px;
+  margin-top: 16px;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.progress-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.progress-bar {
+  flex: 1;
+  min-width: 60px;
+}
+
+.progress-text {
+  font-size: 12px;
+  min-width: 32px;
+  text-align: right;
+}
+
+.progress-btn {
+  flex-shrink: 0;
+}
+
+/* ========== 响应式：手机 ========== */
+@media screen and (max-width: 768px) {
+  .plan-page {
+    padding: 10px;
+  }
+
+  .page-title {
+    font-size: 16px;
+  }
+
+  .add-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .input-title {
+    width: 100% !important;
+  }
+
+  .add-form .el-button {
+    width: 100%;
+  }
+}
+
+/* ========== 响应式：小手机 ========== */
+@media screen and (max-width: 480px) {
+  .plan-list .el-table {
+    font-size: 12px;
+  }
 }
 </style>
