@@ -16,6 +16,19 @@ public class PlanService extends ServiceImpl<PlanMapper, Plan> {
         return this.list(wrapper);
     }
 
+    /**
+     * 校验 sort 值是否已被其他记录占用
+     * @return true = 可用（唯一），false = 已存在
+     */
+    public boolean isSortUnique(Integer sort, Long excludeId) {
+        LambdaQueryWrapper<Plan> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Plan::getSort, sort);
+        if (excludeId != null) {
+            wrapper.ne(Plan::getId, excludeId);
+        }
+        return this.count(wrapper) == 0;
+    }
+
     public boolean addPlan(Plan plan) {
         // 新增时 sort 默认取当前最大 sort + 1（sort=0 或 null 时走默认逻辑）
         if (plan.getSort() == null || plan.getSort() == 0) {

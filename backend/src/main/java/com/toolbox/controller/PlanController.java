@@ -29,6 +29,10 @@ public class PlanController {
     @PostMapping("/add")
     @Operation(summary = "新增计划")
     public Result<Boolean> add(@RequestBody Plan plan) {
+        // sort 唯一性校验
+        if (plan.getSort() != null && plan.getSort() > 0 && !planService.isSortUnique(plan.getSort(), null)) {
+            return Result.error("排序值 " + plan.getSort() + " 已存在，请使用其他值");
+        }
         boolean success = planService.addPlan(plan);
         return success ? Result.success(true) : Result.error("添加失败");
     }
@@ -38,6 +42,10 @@ public class PlanController {
     public Result<Boolean> update(@RequestBody Plan plan) {
         if (plan.getId() == null) {
             return Result.error("ID不能为空");
+        }
+        // sort 唯一性校验
+        if (plan.getSort() != null && !planService.isSortUnique(plan.getSort(), plan.getId())) {
+            return Result.error("排序值 " + plan.getSort() + " 已存在，请使用其他值");
         }
         boolean success = planService.updatePlan(plan);
         return success ? Result.success(true) : Result.error("更新失败");

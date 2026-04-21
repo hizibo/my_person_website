@@ -7,6 +7,7 @@
           <div class="info-tooltip-content">
             <p><strong>功能说明：</strong></p>
             <p>• 添加计划：输入标题和描述后点击添加按钮</p>
+            <p>• 查看计划：双击列表行查看详情</p>
             <p>• 编辑计划：点击编辑按钮修改计划内容</p>
             <p>• 进度管理：点击修改按钮调整计划进度</p>
             <p>• 搜索功能：输入关键词后点击搜索按钮</p>
@@ -28,7 +29,7 @@
     <!-- 计划列表 -->
     <div class="plan-list">
       <div class="table-wrapper">
-        <el-table :data="plans" style="width: 100%" border v-loading="loading" size="small">
+        <el-table :data="plans" style="width: 100%" border v-loading="loading" size="small" @row-dblclick="viewPlan">
           <el-table-column prop="sort" label="排序" width="80">
             <template #default="{ row }">
               {{ row.sort }}
@@ -60,20 +61,52 @@
       </div>
     </div>
 
+    <!-- 查看计划对话框 -->
+    <el-dialog v-model="viewDialogVisible" title="查看计划" width="700" append-to-body class="view-dialog">
+      <div class="view-content" v-if="viewForm">
+        <div class="view-field">
+          <label>标题</label>
+          <div class="view-value">{{ viewForm.title }}</div>
+        </div>
+        <div class="view-field">
+          <label>描述</label>
+          <div class="view-value article-format" v-html="formatDescription(viewForm.description)"></div>
+        </div>
+        <div class="view-field">
+          <label>进度</label>
+          <div class="view-value">
+            <el-progress :percentage="viewForm.progress" :stroke-width="10" />
+          </div>
+        </div>
+        <div class="view-field">
+          <label>排序</label>
+          <div class="view-value">{{ viewForm.sort }}</div>
+        </div>
+        <div class="view-field">
+          <label>更新时间</label>
+          <div class="view-value">{{ formatDate(viewForm.updateTime) }}</div>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="viewDialogVisible = false" size="small">关闭</el-button>
+        <el-button type="primary" @click="goEditFromView" :icon="Edit" size="small">修改</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 编辑计划对话框 -->
     <el-dialog v-model="editDialogVisible" :title="editingCategory ? '编辑分类' : '编辑计划'" width="500" append-to-body>
       <el-form :model="editForm" label-width="70px" size="small">
         <el-form-item label="标题">
-          <el-input v-model="editForm.title" />
+          <el-input v-model="editForm.title" style="width: 100%" />
         </el-form-item>
         <el-form-item label="描述">
-          <el-input v-model="editForm.description" type="textarea" :rows="3" />
+          <el-input v-model="editForm.description" type="textarea" :rows="6" style="width: 100%" />
         </el-form-item>
         <el-form-item label="进度">
-          <el-slider v-model="editForm.progress" show-input :step="5" />
+          <el-slider v-model="editForm.progress" show-input :step="5" style="width: 100%" />
         </el-form-item>
         <el-form-item label="排序">
-          <el-input-number v-model="editForm.sort" :min="1" :step="1" placeholder="排序号" />
+          <el-input-number v-model="editForm.sort" :min="1" :step="1" placeholder="排序号" style="width: 100%" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -115,6 +148,9 @@ const editingCategory = ref(false)
 
 const newPlan = reactive({ title: '', description: '', sort: null })
 
+const viewDialogVisible = ref(false)
+const viewForm = ref(null)
+
 const editDialogVisible = ref(false)
 const editForm = reactive({ id: null, title: '', description: '', progress: 0, sort: 0 })
 
@@ -125,6 +161,11 @@ const formatDate = (dateStr) => {
   if (!dateStr) return ''
   const date = new Date(dateStr)
   return date.toLocaleDateString('zh-CN') + ' ' + date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+}
+
+const formatDescription = (desc) => {
+  if (!desc) return '<span style="color:#999">暂无描述</span>'
+  return desc.replace(/\n/g, '<br>')
 }
 
 const fetchPlans = async () => {
@@ -164,24 +205,38 @@ const searchPlans = async () => {
 
 const addPlan = async () => {
   if (!newPlan.title.trim()) { ElMessage.warning('请输入标题'); return }
+  if (newPlan.sort != null && newPlan.sort < 1) { ElMessage.warning('排序值必须大于 0'); return }
   adding.value = true
   try {
-    const response = await axios.post(`${API_BASE}/add`, { title: newPlan.title, description: newPlan.description, progress: 0, status: 'active', sort: newPlan.sort || 1 })
+    const response = await axios.post(`${API_BASE}/add`, { title: newPlan.title, description: newPlan.description, progress: 0, status: 'active', sort: newPlan.sort || 0 })
     if (response.data && response.data.code === 200) {
       ElMessage.success('添加成功'); newPlan.title = ''; newPlan.description = ''; newPlan.sort = null; await fetchPlans()
-    } else { ElMessage.error(response.data.msg || '添加失败') }
+    } else { ElMessage.error(response.data.message || '添加失败') }
   } catch (error) { console.error('添加计划失败:', error); ElMessage.error('添加计划失败') }
   finally { adding.value = false }
+}
+
+const viewPlan = (row) => {
+  viewForm.value = { ...row }
+  viewDialogVisible.value = true
+}
+
+const goEditFromView = () => {
+  const row = viewForm.value
+  viewDialogVisible.value = false
+  editForm.id = row.id; editForm.title = row.title; editForm.description = row.description; editForm.progress = row.progress; editForm.sort = row.sort || 0
+  editDialogVisible.value = true
 }
 
 const editPlan = (row) => { editForm.id = row.id; editForm.title = row.title; editForm.description = row.description; editForm.progress = row.progress; editForm.sort = row.sort || 0; editDialogVisible.value = true }
 
 const saveEdit = async () => {
+  if (editForm.sort != null && editForm.sort < 1) { ElMessage.warning('排序值必须大于 0'); return }
   editing.value = true
   try {
     const response = await axios.put(`${API_BASE}/update`, editForm)
     if (response.data && response.data.code === 200) { ElMessage.success('更新成功'); editDialogVisible.value = false; await fetchPlans() }
-    else { ElMessage.error(response.data.msg || '更新失败') }
+    else { ElMessage.error(response.data.message || '更新失败') }
   } catch (error) { console.error('更新计划失败:', error); ElMessage.error('更新计划失败') }
   finally { editing.value = false }
 }
@@ -295,6 +350,39 @@ onMounted(() => { fetchPlans() })
   flex-shrink: 0;
 }
 
+/* ========== 查看对话框样式 ========== */
+.view-content {
+  padding: 8px 0;
+}
+
+.view-field {
+  margin-bottom: 20px;
+}
+
+.view-field label {
+  display: block;
+  font-size: 13px;
+  color: #909399;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.view-value {
+  font-size: 14px;
+  color: #303133;
+  line-height: 1.6;
+}
+
+.view-value.article-format {
+  background: #fafafa;
+  padding: 16px;
+  border-radius: 6px;
+  border: 1px solid #ebeef5;
+  min-height: 80px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 /* ========== 响应式：手机 ========== */
 @media screen and (max-width: 768px) {
   .plan-page {
@@ -316,6 +404,10 @@ onMounted(() => { fetchPlans() })
 
   .add-form .el-button {
     width: 100%;
+  }
+
+  .view-dialog :deep(.el-dialog) {
+    width: 95% !important;
   }
 }
 
