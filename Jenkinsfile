@@ -19,11 +19,15 @@ pipeline {
         stage('Build and Deploy') {
             steps {
                 sh '''
-                    # 只删除非 MySQL 服务，保持 MySQL 容器运行
-                    docker-compose rm -sf backend frontend xmind-service
-                    # 重新构建并启动（MySQL 保持不变，数据卷持久化）
-                    docker-compose build --no-cache
-                    docker-compose up -d
+                    # ① 只停止非 MySQL 服务（容器保留，数据卷不丢失）
+                    docker-compose stop backend frontend xmind-service || true
+                    # ② 增量构建 + 启动非 MySQL 服务（--build 只重建有改动的镜像）
+                    docker-compose up -d --build backend frontend xmind-service
+                    # ③ 等待后端就绪
+                    for i in $(seq 1 30); do
+                      curl -sf http://localhost:8080/api/plan/list 2>/dev/null && break
+                      sleep 3
+                    done
                 '''
             }
         }
@@ -31,7 +35,6 @@ pipeline {
         stage('Health Check') {
             steps {
                 sh '''
-                    sleep 30
                     curl -f http://localhost:80 || exit 1
                 '''
             }

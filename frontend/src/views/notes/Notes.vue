@@ -27,12 +27,13 @@
 
     <el-row :gutter="0" class="notes-row">
       <!-- 左侧分类树 -->
-      <div class="category-col" :class="{ 'collapsed': categoryCollapsed }" :style="{ width: categoryCollapsed ? '0px' : '260px', minWidth: categoryCollapsed ? '0px' : '220px', maxWidth: categoryCollapsed ? '0px' : '320px' }">
-        <!-- 折叠/展开按钮 -->
+      <div class="category-col" :class="{ 'collapsed': categoryCollapsed }">
+        <!-- 折叠按钮（始终在分类列外部可见） -->
         <div class="collapse-btn" @click="categoryCollapsed = !categoryCollapsed" :title="categoryCollapsed ? '展开分类' : '收起分类'">
           <el-icon :size="14"><ArrowLeft v-if="!categoryCollapsed" /><ArrowRight v-else /></el-icon>
         </div>
-        <div class="category-panel" :class="{ 'mobile-show': showMobileCategory }">
+        <!-- 折叠内容 -->
+        <div class="category-panel" :class="{ 'mobile-show': showMobileCategory }" :style="{ width: categoryCollapsed ? '0px' : '260px', minWidth: categoryCollapsed ? '0px' : '220px', maxWidth: categoryCollapsed ? '0px' : '320px' }">
           <div class="category-header">
             <span class="category-header-title">分类管理</span>
             <div class="category-header-actions">
@@ -40,24 +41,26 @@
               <el-button type="primary" size="small" @click="addCategoryDialogVisible = true" :icon="Plus">新增</el-button>
             </div>
           </div>
-          <el-tree ref="categoryTreeRef" :data="categoryTree" :props="{ label: 'name', children: 'children' }" node-key="id" highlight-current :expand-on-click-node="false" :default-expanded-keys="defaultExpandedKeys" @node-click="handleCategoryClick">
-            <template #default="{ node, data }">
-              <span class="custom-tree-node">
-                <span>
-                  <el-icon v-if="data.children && data.children.length" @click.stop="toggleNodeExpand(node)" style="cursor: pointer; margin-right: 4px;">
-                    <ArrowRight v-if="!node.expanded" />
-                    <ArrowDown v-else />
-                  </el-icon>
-                  {{ node.label }}
+          <div class="category-tree-wrapper">
+            <el-tree ref="categoryTreeRef" :data="categoryTree" :props="{ label: 'name', children: 'children' }" node-key="id" highlight-current :expand-on-click-node="false" :default-expanded-keys="defaultExpandedKeys" @node-click="handleCategoryClick">
+              <template #default="{ node, data }">
+                <span class="custom-tree-node">
+                  <span>
+                    <el-icon v-if="data.children && data.children.length" @click.stop="toggleNodeExpand(node)" style="cursor: pointer; margin-right: 4px;">
+                      <ArrowRight v-if="!node.expanded" />
+                      <ArrowDown v-else />
+                    </el-icon>
+                    {{ node.label }}
+                  </span>
+                  <span class="node-actions">
+                    <el-button link type="primary" size="small" @click.stop="addChildCategory(data)" :icon="Plus"></el-button>
+                    <el-button link type="primary" size="small" @click.stop="editCategory(data)" :icon="Edit"></el-button>
+                    <el-button link type="danger" size="small" @click.stop="deleteCategory(data)" :icon="Delete"></el-button>
+                  </span>
                 </span>
-                <span class="node-actions">
-                  <el-button link type="primary" size="small" @click.stop="addChildCategory(data)" :icon="Plus"></el-button>
-                  <el-button link type="primary" size="small" @click.stop="editCategory(data)" :icon="Edit"></el-button>
-                  <el-button link type="danger" size="small" @click.stop="deleteCategory(data)" :icon="Delete"></el-button>
-                </span>
-              </span>
-            </template>
-          </el-tree>
+              </template>
+            </el-tree>
+          </div>
         </div>
       </div>
 
@@ -489,13 +492,13 @@ onMounted(() => { fetchCategories() })
 /* 分类列 */
 .category-col {
   flex-shrink: 0;
-  transition: width 0.3s ease, min-width 0.3s ease, max-width 0.3s ease;
-  overflow: hidden;
+  display: flex;
+  overflow: visible;
   position: relative;
 }
 
 .category-col.collapsed {
-  padding: 0 !important;
+  flex-shrink: 0;
 }
 
 .category-col.collapsed .category-panel {
@@ -503,12 +506,9 @@ onMounted(() => { fetchCategories() })
 }
 
 .collapse-btn {
-  position: absolute;
-  top: 50%;
-  right: -14px;
-  transform: translateY(-50%);
-  width: 14px;
-  height: 40px;
+  flex-shrink: 0;
+  width: 16px;
+  height: 48px;
   background: #e4e7ed;
   border-radius: 0 4px 4px 0;
   display: flex;
@@ -517,22 +517,21 @@ onMounted(() => { fetchCategories() })
   cursor: pointer;
   z-index: 10;
   transition: background 0.2s;
+  align-self: center;
+  margin-left: -1px;
 }
 
 .collapse-btn:hover {
   background: #c0c4cc;
 }
 
-.category-col.collapsed .collapse-btn {
-  right: 0;
-  border-radius: 0 4px 4px 0;
-  position: absolute;
-  left: 0;
-  width: 18px;
-  height: 60px;
-}
-
 .category-panel {
+  flex-shrink: 0;
+  transition: width 0.3s ease, min-width 0.3s ease, max-width 0.3s ease;
+  overflow: hidden;
+  width: 260px;
+  min-width: 220px;
+  max-width: 320px;
   border: 1px solid #e4e7ed;
   border-radius: 8px;
   padding: 12px;
@@ -540,7 +539,11 @@ onMounted(() => { fetchCategories() })
   position: sticky;
   top: 0;
   max-height: calc(100vh - 120px);
+}
+
+.category-tree-wrapper {
   overflow-y: auto;
+  max-height: calc(100vh - 180px);
 }
 
 .category-header {
@@ -697,7 +700,10 @@ onMounted(() => { fetchCategories() })
     display: none;
   }
 
-  .category-panel {
+  .category-col .category-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
     position: static;
     max-height: none;
     display: none;
