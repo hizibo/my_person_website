@@ -1,5 +1,15 @@
 <template>
   <div class="tools-page">
+    <!-- 登录入口 -->
+    <div class="login-bar" v-if="!isLoggedIn">
+      <span class="login-tip">🔒 更多功能请先登录</span>
+      <el-button type="primary" size="small" @click="showLogin = true">登录</el-button>
+    </div>
+    <div class="login-bar logged-in" v-else>
+      <span class="login-tip">✅ 已登录：{{ username }}</span>
+      <el-button size="small" @click="handleLogout">退出登录</el-button>
+    </div>
+
     <!-- 工具分类 -->
     <div class="container">
       <div v-if="tools.length === 0 && !loading" class="empty-wrapper">
@@ -26,6 +36,22 @@
         </div>
       </div>
     </div>
+
+    <!-- 登录弹窗 -->
+    <el-dialog v-model="showLogin" title="管理员登录" width="380px" :close-on-click-modal="false">
+      <el-form :model="loginForm" @submit.prevent="handleLogin">
+        <el-form-item label="用户名">
+          <el-input v-model="loginForm.username" placeholder="请输入用户名" prefix-icon="User" />
+        </el-form-item>
+        <el-form-item label="密码">
+          <el-input v-model="loginForm.password" type="password" placeholder="请输入密码" prefix-icon="Lock" show-password />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showLogin = false">取消</el-button>
+        <el-button type="primary" :loading="loginLoading" @click="handleLogin">登录</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -33,10 +59,18 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
+import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 const tools = ref([])
 const loading = ref(true)
+
+// 登录状态
+const isLoggedIn = ref(!!localStorage.getItem('auth_token'))
+const username = ref(localStorage.getItem('auth_username') || '')
+const showLogin = ref(false)
+const loginLoading = ref(false)
+const loginForm = ref({ username: '', password: '' })
 
 const localTools = [
   {
@@ -90,11 +124,72 @@ const goTool = (tool) => {
     router.push(tool.route)
   }
 }
+
+const handleLogin = async () => {
+  if (!loginForm.value.username || !loginForm.value.password) {
+    ElMessage.warning('请输入用户名和密码')
+    return
+  }
+  loginLoading.value = true
+  try {
+    const res = await axios.post('/api/auth/login', {
+      username: loginForm.value.username,
+      password: loginForm.value.password
+    })
+    if (res.data.code === 200) {
+      const { token, username: name } = res.data.data
+      localStorage.setItem('auth_token', token)
+      localStorage.setItem('auth_username', name)
+      isLoggedIn.value = true
+      username.value = name
+      showLogin.value = false
+      loginForm.value = { username: '', password: '' }
+      ElMessage.success('登录成功')
+      // 登录后跳转到计划页
+      router.push('/plan')
+    } else {
+      ElMessage.error(res.data.message || '登录失败')
+    }
+  } catch (e) {
+    ElMessage.error('登录失败，请检查网络连接')
+  } finally {
+    loginLoading.value = false
+  }
+}
+
+const handleLogout = () => {
+  localStorage.removeItem('auth_token')
+  localStorage.removeItem('auth_username')
+  isLoggedIn.value = false
+  username.value = ''
+  ElMessage.success('已退出登录')
+  router.push('/tools')
+}
 </script>
 
 <style scoped>
 .tools-page {
   height: 100%;
+}
+
+.login-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 0 0 12px 12px;
+  margin-bottom: 4px;
+}
+
+.login-bar.logged-in {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+}
+
+.login-tip {
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .container {
@@ -210,6 +305,14 @@ const goTool = (tool) => {
 
   .tool-name {
     font-size: 15px;
+  }
+
+  .login-bar {
+    padding: 10px 16px;
+  }
+
+  .login-tip {
+    font-size: 13px;
   }
 }
 </style>

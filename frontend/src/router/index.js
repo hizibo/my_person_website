@@ -8,7 +8,7 @@ const routes = [
     children: [
       {
         path: '',
-        redirect: '/plan' // 默认重定向到“我的计划”
+        redirect: '/plan' // 默认重定向到"我的计划"
       },
       {
         path: 'plan',
@@ -47,6 +47,19 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes
+})
+
+// 路由守卫：未登录时只能访问工具页，其他页面重定向到工具页
+router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem('auth_token')
+  const isToolsPage = to.path === '/tools' || to.path.startsWith('/tools/')
+
+  if (!token && !isToolsPage) {
+    // 未登录访问非工具页 → 重定向到工具页
+    next('/tools')
+  } else {
+    next()
+  }
 })
 
 export default router

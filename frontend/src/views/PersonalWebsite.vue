@@ -18,15 +18,15 @@
       <div class="sidebar-inner">
         <h1 class="logo">🌟 个人网站</h1>
         <nav class="nav">
-          <router-link to="/plan" class="nav-item" @click="closeSidebarOnMobile">
+          <router-link v-if="isLoggedIn" to="/plan" class="nav-item" @click="closeSidebarOnMobile">
             <span class="nav-icon">📋</span>
             <span class="nav-text">计划</span>
           </router-link>
-          <router-link to="/notes" class="nav-item" @click="closeSidebarOnMobile">
+          <router-link v-if="isLoggedIn" to="/notes" class="nav-item" @click="closeSidebarOnMobile">
             <span class="nav-icon">📝</span>
             <span class="nav-text">笔记</span>
           </router-link>
-          <router-link to="/website" class="nav-item" @click="closeSidebarOnMobile">
+          <router-link v-if="isLoggedIn" to="/website" class="nav-item" @click="closeSidebarOnMobile">
             <span class="nav-icon">🌐</span>
             <span class="nav-text">网站</span>
           </router-link>
@@ -35,6 +35,11 @@
             <span class="nav-text">工具</span>
           </router-link>
         </nav>
+        <!-- 登录状态指示 -->
+        <div class="auth-status" v-if="isLoggedIn">
+          <span class="auth-user">👤 {{ username }}</span>
+          <span class="auth-logout" @click="handleLogout">退出</span>
+        </div>
       </div>
     </div>
 
@@ -46,11 +51,16 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, watch, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 const sidebarOpen = ref(false)
 const route = useRoute()
+const router = useRouter()
+
+// 登录状态
+const isLoggedIn = computed(() => !!localStorage.getItem('auth_token'))
+const username = computed(() => localStorage.getItem('auth_username') || '')
 
 // 路由变化时关闭侧边栏
 watch(() => route.path, () => {
@@ -66,6 +76,12 @@ const closeSidebarOnMobile = () => {
   if (window.innerWidth <= 768) {
     sidebarOpen.value = false
   }
+}
+
+const handleLogout = () => {
+  localStorage.removeItem('auth_token')
+  localStorage.removeItem('auth_username')
+  router.push('/tools')
 }
 </script>
 
@@ -201,6 +217,31 @@ const closeSidebarOnMobile = () => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* ========== 登录状态 ========== */
+.auth-status {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid #3d566e;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.auth-user {
+  color: #bdc3c7;
+}
+
+.auth-logout {
+  color: #e74c3c;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.auth-logout:hover {
+  color: #ff6b6b;
 }
 
 /* ========== 主内容区 ========== */

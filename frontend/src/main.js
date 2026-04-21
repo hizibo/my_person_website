@@ -5,6 +5,7 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import App from './App.vue'
 import router from './router'
+import axios from 'axios'
 
 const app = createApp(App)
 
@@ -16,3 +17,30 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
 app.use(ElementPlus, { locale: zhCn })
 app.use(router)
 app.mount('#app')
+
+// ========== 全局 Axios 拦截器 ==========
+
+// 请求拦截：自动附加 Token
+axios.interceptors.request.use(
+  config => {
+    const token = localStorage.getItem('auth_token')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+  },
+  error => Promise.reject(error)
+)
+
+// 响应拦截：401 未认证 → 清除登录状态并跳转到工具页
+axios.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response && error.response.status === 401) {
+      localStorage.removeItem('auth_token')
+      localStorage.removeItem('auth_username')
+      window.location.href = '/#/tools'
+    }
+    return Promise.reject(error)
+  }
+)
