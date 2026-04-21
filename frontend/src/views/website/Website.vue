@@ -19,7 +19,7 @@
     </div>
 
     <!-- 数据表格 -->
-    <el-table :data="tableData" v-loading="loading" stripe border style="margin-top: 20px">
+    <el-table :data="tableData" v-loading="loading" stripe border style="margin-top: 20px" @row-dblclick="viewWebsite">
       <el-table-column prop="name" label="网站名称" width="180" />
       <el-table-column prop="url" label="网站地址" width="250">
         <template #default="{ row }">
@@ -132,7 +132,7 @@
           <el-input
             v-model="formData.description"
             type="textarea"
-            :rows="3"
+            :autosize="{ minRows: 3 }"
             placeholder="可选，请输入网站描述"
             maxlength="512"
             show-word-limit
@@ -146,6 +146,36 @@
             确认
           </el-button>
         </span>
+      </template>
+    </el-dialog>
+
+    <!-- 查看网站对话框 -->
+    <el-dialog v-model="viewDialogVisible" title="查看网站" width="500" append-to-body class="view-dialog">
+      <div class="view-content" v-if="viewForm">
+        <div class="view-field">
+          <label>网站名称</label>
+          <div class="view-value">{{ viewForm.name }}</div>
+        </div>
+        <div class="view-field">
+          <label>网站地址</label>
+          <div class="view-value"><a :href="viewForm.url" target="_blank" style="color: #409eff;">{{ viewForm.url }}</a></div>
+        </div>
+        <div class="view-field">
+          <label>账号</label>
+          <div class="view-value">{{ viewForm.account || '无' }}</div>
+        </div>
+        <div class="view-field">
+          <label>密码</label>
+          <div class="view-value">{{ viewForm.password || '无' }}</div>
+        </div>
+        <div class="view-field">
+          <label>描述</label>
+          <div class="view-value article-format">{{ viewForm.description || '无' }}</div>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="viewDialogVisible = false" size="small">关闭</el-button>
+        <el-button type="primary" @click="goEditFromView" :icon="Edit" size="small">修改</el-button>
       </template>
     </el-dialog>
 
@@ -170,7 +200,7 @@
 
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
-import { Search, Plus, DocumentCopy } from '@element-plus/icons-vue'
+import { Search, Plus, DocumentCopy, Edit } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
 
@@ -200,6 +230,10 @@ const deleteDialogVisible = ref(false)
 const deletingId = ref(null)
 const deleting = ref(false)
 
+// 查看网站
+const viewDialogVisible = ref(false)
+const viewForm = ref(null)
+
 // 表单验证规则
 const formRules = {
   name: [
@@ -224,6 +258,18 @@ const formRules = {
   description: [
     { max: 512, message: '描述不能超过512个字符', trigger: 'blur' }
   ]
+}
+
+// 查看网站详情
+const viewWebsite = (row) => {
+  viewForm.value = { ...row }
+  viewDialogVisible.value = true
+}
+
+const goEditFromView = () => {
+  const row = viewForm.value
+  viewDialogVisible.value = false
+  showEditDialog(row)
 }
 
 // 加载数据
@@ -442,5 +488,42 @@ onMounted(() => {
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
+}
+
+:deep(.el-table__body-wrapper .el-table__row) {
+  cursor: pointer;
+}
+
+/* ========== 查看对话框样式 ========== */
+.view-content {
+  padding: 8px 0;
+}
+
+.view-field {
+  margin-bottom: 20px;
+}
+
+.view-field label {
+  display: block;
+  font-size: 13px;
+  color: #909399;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.view-value {
+  font-size: 14px;
+  color: #303133;
+  line-height: 1.6;
+}
+
+.view-value.article-format {
+  background: #fafafa;
+  padding: 16px;
+  border-radius: 6px;
+  border: 1px solid #ebeef5;
+  min-height: 80px;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 </style>

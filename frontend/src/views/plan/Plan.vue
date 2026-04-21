@@ -100,7 +100,7 @@
           <el-input v-model="editForm.title" style="width: 100%" />
         </el-form-item>
         <el-form-item label="描述">
-          <el-input v-model="editForm.description" type="textarea" :rows="6" style="width: 100%" />
+          <el-input v-model="editForm.description" type="textarea" :autosize="{ minRows: 6 }" style="width: 100%" />
         </el-form-item>
         <el-form-item label="进度">
           <el-slider v-model="editForm.progress" show-input :step="5" style="width: 100%" />
@@ -348,6 +348,10 @@ onMounted(() => { fetchPlans() })
 
 .progress-btn {
   flex-shrink: 0;
+}
+
+:deep(.el-table__body-wrapper .el-table__row) {
+  cursor: pointer;
 }
 
 /* ========== 查看对话框样式 ========== */

@@ -9,7 +9,8 @@
             <p>• 分类管理：左侧树形结构管理笔记分类</p>
             <p>• 展开/收起：点击分类头部按钮切换全部展开/收起</p>
             <p>• 新建笔记：选择分类后点击新建按钮</p>
-            <p>• 编辑笔记：单击编辑按钮或双击笔记行</p>
+            <p>• 查看笔记：双击笔记行查看详情</p>
+            <p>• 编辑笔记：单击编辑按钮</p>
             <p>• 搜索功能：支持搜索标题、内容、标签</p>
             <p>• 富文本编辑：支持多种格式和图片</p>
           </div>
@@ -82,7 +83,7 @@
               </div>
             </div>
             <div class="table-wrapper">
-              <el-table :data="notes" border style="width: 100%" v-loading="notesLoading" @row-dblclick="handleRowDblClick" size="small">
+              <el-table :data="notes" border style="width: 100%" v-loading="notesLoading" @row-dblclick="viewNote" size="small">
                 <el-table-column prop="id" label="ID" width="60" />
                 <el-table-column prop="title" label="标题" min-width="120" />
                 <el-table-column prop="summary" label="摘要" min-width="150" show-overflow-tooltip />
@@ -124,7 +125,7 @@
                   <el-input v-model="noteForm.tags" placeholder="多个标签用逗号分隔" />
                 </el-form-item>
                 <el-form-item label="摘要">
-                  <el-input v-model="noteForm.summary" type="textarea" rows="2" placeholder="请输入摘要" />
+                  <el-input v-model="noteForm.summary" type="textarea" :autosize="{ minRows: 2 }" placeholder="请输入摘要" />
                 </el-form-item>
                 <el-form-item label="内容" required>
                   <QuillEditor v-model:content="noteForm.content" contentType="html" :options="editorOptions" class="quill-editor-mobile" />
@@ -135,6 +136,36 @@
         </div>
       </div>
     </el-row>
+
+    <!-- 查看笔记对话框 -->
+    <el-dialog v-model="viewDialogVisible" title="查看笔记" width="700" append-to-body class="view-dialog">
+      <div class="view-content" v-if="viewForm">
+        <div class="view-field">
+          <label>标题</label>
+          <div class="view-value">{{ viewForm.title }}</div>
+        </div>
+        <div class="view-field">
+          <label>分类</label>
+          <div class="view-value">{{ viewForm.categoryName }}</div>
+        </div>
+        <div class="view-field">
+          <label>标签</label>
+          <div class="view-value">{{ viewForm.tags || '无' }}</div>
+        </div>
+        <div class="view-field">
+          <label>摘要</label>
+          <div class="view-value article-format">{{ viewForm.summary || '无' }}</div>
+        </div>
+        <div class="view-field">
+          <label>内容</label>
+          <div class="view-value article-format" v-html="viewForm.content || '<span style=\'color:#999\'>暂无内容</span>'"></div>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="viewDialogVisible = false" size="small">关闭</el-button>
+        <el-button type="primary" @click="goEditFromView" :icon="Edit" size="small">修改</el-button>
+      </template>
+    </el-dialog>
 
     <!-- 分类对话框 -->
     <el-dialog v-model="addCategoryDialogVisible" :title="editingCategory ? '编辑分类' : '新增分类'" width="400" append-to-body>
@@ -216,6 +247,10 @@ const noteForm = reactive({
   tags: ''
 })
 const savingNote = ref(false)
+
+// 查看笔记
+const viewDialogVisible = ref(false)
+const viewForm = ref(null)
 
 // 编辑器配置
 const editorOptions = {
@@ -412,7 +447,26 @@ const editNote = async (row) => {
   } catch (error) { console.error('获取笔记详情失败:', error); ElMessage.error('获取笔记详情失败') }
 }
 
-const handleRowDblClick = (row) => { editNote(row) }
+const viewNote = async (row) => {
+  try {
+    const response = await axios.get(`${API_BASE}/detail/${row.id}`)
+    if (response.data && response.data.code === 200) {
+      const note = response.data.data
+      const cat = flatCategories.value.find(c => c.id === note.categoryId)
+      viewForm.value = {
+        ...note,
+        categoryName: cat ? cat.name : '未知'
+      }
+      viewDialogVisible.value = true
+    } else { ElMessage.error('获取笔记详情失败') }
+  } catch (error) { console.error('获取笔记详情失败:', error); ElMessage.error('获取笔记详情失败') }
+}
+
+const goEditFromView = () => {
+ const row = { id: viewForm.value.id }
+  viewDialogVisible.value = false
+  editNote(row)
+}
 
 const saveNote = async () => {
   if (!noteForm.title.trim()) { ElMessage.warning('请输入笔记标题'); return }
@@ -621,6 +675,43 @@ onMounted(() => { fetchCategories() })
 
 .table-wrapper {
   overflow-x: auto;
+}
+
+:deep(.el-table__body-wrapper .el-table__row) {
+  cursor: pointer;
+}
+
+/* ========== 查看对话框样式 ========== */
+.view-content {
+  padding: 8px 0;
+}
+
+.view-field {
+  margin-bottom: 20px;
+}
+
+.view-field label {
+  display: block;
+  font-size: 13px;
+  color: #909399;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.view-value {
+  font-size: 14px;
+  color: #303133;
+  line-height: 1.6;
+}
+
+.view-value.article-format {
+  background: #fafafa;
+  padding: 16px;
+  border-radius: 6px;
+  border: 1px solid #ebeef5;
+  min-height: 80px;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 /* 编辑器 */
