@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # MySQL 数据库
+  # MySQL 数据库（部署时保持不变，仅首次创建）
   mysql:
     image: mysql:8.0
     container_name: website-mysql

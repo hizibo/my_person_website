@@ -19,7 +19,9 @@ pipeline {
         stage('Build and Deploy') {
             steps {
                 sh '''
-                    docker-compose down
+                    # 只删除非 MySQL 服务，保持 MySQL 容器运行
+                    docker-compose rm -sf backend frontend xmind-service
+                    # 重新构建并启动（MySQL 保持不变，数据卷持久化）
                     docker-compose build --no-cache
                     docker-compose up -d
                 '''
