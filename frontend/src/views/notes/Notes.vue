@@ -649,6 +649,133 @@ onMounted(() => { fetchCategories() })
   margin-top: 12px;
 }
 
+/* Quill 内容区排版优化 */
+.ql-editor.ql-blank::before {
+  color: #c0c4cc;
+  font-style: normal;
+}
+
+.ql-editor {
+  min-height: 320px;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-size: 15px;
+  line-height: 1.8;
+  color: #2c2c2c;
+  padding: 16px 20px;
+}
+
+.ql-editor p {
+  margin: 0 0 12px;
+}
+
+.ql-editor h1,
+.ql-editor h2,
+.ql-editor h3,
+.ql-editor h4,
+.ql-editor h5,
+.ql-editor h6 {
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 20px 0 10px;
+}
+
+.ql-editor h1 { font-size: 22px; }
+.ql-editor h2 { font-size: 19px; }
+.ql-editor h3 { font-size: 17px; }
+
+.ql-editor blockquote {
+  border-left: 3px solid #d0d7de;
+  padding: 4px 16px;
+  margin: 12px 0;
+  color: #57606a;
+  background: #f6f8fa;
+  border-radius: 0 4px 4px 0;
+}
+
+.ql-editor pre.ql-syntax {
+  background: #f6f8fa;
+  border: 1px solid #e1e4e8;
+  border-radius: 6px;
+  padding: 14px 16px;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #24292f;
+  overflow-x: auto;
+  margin: 12px 0;
+}
+
+.ql-editor code {
+  background: #f0f0f0;
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 13px;
+  color: #e74c3c;
+}
+
+.ql-editor ul,
+.ql-editor ol {
+  padding-left: 24px;
+  margin: 8px 0 12px;
+}
+
+.ql-editor li {
+  margin: 4px 0;
+  line-height: 1.8;
+}
+
+.ql-editor hr {
+  border: none;
+  border-top: 1px solid #e1e4e8;
+  margin: 16px 0;
+}
+
+.ql-editor a {
+  color: #0969da;
+  text-decoration: none;
+}
+
+.ql-editor a:hover {
+  text-decoration: underline;
+}
+
+/* Quill 工具栏美化 */
+.ql-toolbar.ql-snow {
+  border: 1px solid #e4e7ed;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  padding: 8px 10px;
+  background: #fafafa;
+}
+
+.ql-container.ql-snow {
+  border: 1px solid #e4e7ed;
+  border-radius: 0 0 6px 6px;
+  font-family: inherit;
+}
+
+.ql-snow .ql-picker {
+  color: #606266;
+}
+
+.ql-snow .ql-picker-label {
+  padding: 2px 6px;
+}
+
+.ql-snow .ql-stroke {
+  stroke: #606266;
+}
+
+.ql-snow .ql-fill {
+  fill: #606266;
+}
+
+.ql-snow .ql-picker.ql-expanded .ql-picker-label {
+  color: #409eff;
+  border-color: #409eff;
+}
+
 /* Quill 编辑器高度 */
 .quill-editor-mobile {
   height: 400px;
