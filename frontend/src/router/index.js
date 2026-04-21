@@ -34,6 +34,11 @@ const routes = [
         path: 'tools/xmind',
         name: 'XmindTool',
         component: () => import('@/views/tools/XmindTool.vue')
+      },
+      {
+        path: 'tools/json',
+        name: 'JsonTool',
+        component: () => import('@/views/tools/JsonTool.vue')
       }
     ]
   }
