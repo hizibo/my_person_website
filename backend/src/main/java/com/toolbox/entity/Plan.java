@@ -16,6 +16,7 @@ public class Plan {
     private String description;    // 计划描述
     private Integer progress;      // 进度(0-100)
     private String status;         // 状态: active/completed/cancelled
+    private Integer sort;         // 排序（正序，小的在前）
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 }

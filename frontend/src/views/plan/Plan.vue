@@ -20,6 +20,7 @@
     <div class="add-form">
       <el-input v-model="newPlan.title" placeholder="计划标题 / 搜索关键词" class="input-title" clearable />
       <el-input v-model="newPlan.description" placeholder="计划描述" class="input-desc" clearable />
+      <el-input-number v-model="newPlan.sort" :min="1" :step="1" placeholder="排序" style="width: 120px" />
       <el-button type="primary" @click="addPlan" :icon="Plus" :loading="adding">添加</el-button>
       <el-button @click="searchPlans" :icon="Search" :loading="searching">搜索</el-button>
     </div>
@@ -28,7 +29,11 @@
     <div class="plan-list">
       <div class="table-wrapper">
         <el-table :data="plans" style="width: 100%" border v-loading="loading" size="small">
-          <el-table-column prop="id" label="ID" width="60" />
+          <el-table-column prop="sort" label="排序" width="80">
+            <template #default="{ row }">
+              {{ row.sort }}
+            </template>
+          </el-table-column>
           <el-table-column prop="title" label="标题" min-width="120" />
           <el-table-column prop="description" label="描述" min-width="150" show-overflow-tooltip />
           <el-table-column label="进度" width="200">
@@ -40,9 +45,9 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column prop="createTime" label="创建时间" width="150">
+          <el-table-column prop="updateTime" label="更新时间" width="150">
             <template #default="{ row }">
-              {{ formatDate(row.createTime) }}
+              {{ formatDate(row.updateTime) }}
             </template>
           </el-table-column>
           <el-table-column label="操作" width="120" fixed="right">
@@ -66,6 +71,9 @@
         </el-form-item>
         <el-form-item label="进度">
           <el-slider v-model="editForm.progress" show-input :step="5" />
+        </el-form-item>
+        <el-form-item label="排序">
+          <el-input-number v-model="editForm.sort" :min="1" :step="1" placeholder="排序号" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -105,10 +113,10 @@ const updatingProgress = ref(false)
 const searching = ref(false)
 const editingCategory = ref(false)
 
-const newPlan = reactive({ title: '', description: '' })
+const newPlan = reactive({ title: '', description: '', sort: null })
 
 const editDialogVisible = ref(false)
-const editForm = reactive({ id: null, title: '', description: '', progress: 0 })
+const editForm = reactive({ id: null, title: '', description: '', progress: 0, sort: 0 })
 
 const progressDialogVisible = ref(false)
 const progressForm = reactive({ id: null, progress: 0 })
@@ -158,15 +166,15 @@ const addPlan = async () => {
   if (!newPlan.title.trim()) { ElMessage.warning('请输入标题'); return }
   adding.value = true
   try {
-    const response = await axios.post(`${API_BASE}/add`, { title: newPlan.title, description: newPlan.description, progress: 0, status: 'active' })
+    const response = await axios.post(`${API_BASE}/add`, { title: newPlan.title, description: newPlan.description, progress: 0, status: 'active', sort: newPlan.sort || 1 })
     if (response.data && response.data.code === 200) {
-      ElMessage.success('添加成功'); newPlan.title = ''; newPlan.description = ''; await fetchPlans()
+      ElMessage.success('添加成功'); newPlan.title = ''; newPlan.description = ''; newPlan.sort = null; await fetchPlans()
     } else { ElMessage.error(response.data.msg || '添加失败') }
   } catch (error) { console.error('添加计划失败:', error); ElMessage.error('添加计划失败') }
   finally { adding.value = false }
 }
 
-const editPlan = (row) => { editForm.id = row.id; editForm.title = row.title; editForm.description = row.description; editForm.progress = row.progress; editDialogVisible.value = true }
+const editPlan = (row) => { editForm.id = row.id; editForm.title = row.title; editForm.description = row.description; editForm.progress = row.progress; editForm.sort = row.sort || 0; editDialogVisible.value = true }
 
 const saveEdit = async () => {
   editing.value = true
