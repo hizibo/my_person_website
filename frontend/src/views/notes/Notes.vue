@@ -25,9 +25,13 @@
       </el-button>
     </div>
 
-    <el-row :gutter="20" class="notes-row">
+    <el-row :gutter="0" class="notes-row">
       <!-- 左侧分类树 -->
-      <el-col :xs="24" :sm="24" :md="6" :lg="6" class="category-col">
+      <div class="category-col" :class="{ 'collapsed': categoryCollapsed }" :style="{ width: categoryCollapsed ? '0px' : '260px', minWidth: categoryCollapsed ? '0px' : '220px', maxWidth: categoryCollapsed ? '0px' : '320px' }">
+        <!-- 折叠/展开按钮 -->
+        <div class="collapse-btn" @click="categoryCollapsed = !categoryCollapsed" :title="categoryCollapsed ? '展开分类' : '收起分类'">
+          <el-icon :size="14"><ArrowLeft v-if="!categoryCollapsed" /><ArrowRight v-else /></el-icon>
+        </div>
         <div class="category-panel" :class="{ 'mobile-show': showMobileCategory }">
           <div class="category-header">
             <span class="category-header-title">分类管理</span>
@@ -55,10 +59,10 @@
             </template>
           </el-tree>
         </div>
-      </el-col>
+      </div>
 
       <!-- 右侧笔记列表/编辑器 -->
-      <el-col :xs="24" :sm="24" :md="18" :lg="18" class="notes-col">
+      <div class="notes-col" :style="{ flex: 1, minWidth: 0 }">
         <div class="notes-panel">
           <!-- 笔记列表 -->
           <div v-if="!showEditor" class="notes-list">
@@ -126,7 +130,7 @@
             </div>
           </div>
         </div>
-      </el-col>
+      </div>
     </el-row>
 
     <!-- 分类对话框 -->
@@ -155,7 +159,7 @@
 
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
-import { Plus, Edit, Delete, Search, InfoFilled, Expand, Fold, ArrowDown, ArrowRight } from '@element-plus/icons-vue'
+import { Plus, Edit, Delete, Search, InfoFilled, Expand, Fold, ArrowDown, ArrowRight, ArrowLeft } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { QuillEditor } from '@vueup/vue-quill'
 import '@vueup/vue-quill/dist/vue-quill.snow.css'
@@ -166,6 +170,9 @@ const CATEGORY_API = '/api/note/category'
 
 // 移动端分类面板显示状态
 const showMobileCategory = ref(false)
+
+// 桌面端分类左右收起
+const categoryCollapsed = ref(false)
 
 // 分类树
 const categoryTree = ref([])
@@ -482,6 +489,47 @@ onMounted(() => { fetchCategories() })
 /* 分类列 */
 .category-col {
   flex-shrink: 0;
+  transition: width 0.3s ease, min-width 0.3s ease, max-width 0.3s ease;
+  overflow: hidden;
+  position: relative;
+}
+
+.category-col.collapsed {
+  padding: 0 !important;
+}
+
+.category-col.collapsed .category-panel {
+  display: none;
+}
+
+.collapse-btn {
+  position: absolute;
+  top: 50%;
+  right: -14px;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 40px;
+  background: #e4e7ed;
+  border-radius: 0 4px 4px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: background 0.2s;
+}
+
+.collapse-btn:hover {
+  background: #c0c4cc;
+}
+
+.category-col.collapsed .collapse-btn {
+  right: 0;
+  border-radius: 0 4px 4px 0;
+  position: absolute;
+  left: 0;
+  width: 18px;
+  height: 60px;
 }
 
 .category-panel {
@@ -640,8 +688,13 @@ onMounted(() => { fetchCategories() })
   .category-col {
     width: 100% !important;
     max-width: 100% !important;
+    min-width: 100% !important;
     flex: 0 0 100% !important;
     margin-bottom: 12px;
+  }
+
+  .category-col .collapse-btn {
+    display: none;
   }
 
   .category-panel {

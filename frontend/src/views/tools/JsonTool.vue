@@ -226,9 +226,35 @@ const copyResult = async () => {
     ElMessage.warning('没有可复制的内容')
     return
   }
+  const text = outputText.value
   try {
-    await navigator.clipboard.writeText(outputText.value)
-    ElMessage.success('已复制到剪贴板')
+    // 优先使用 Clipboard API
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text)
+      ElMessage.success('已复制到剪贴板')
+      return
+    }
+  } catch {
+    // Clipboard API 失败，降级到 execCommand
+  }
+  // 降级方案：创建 textarea + execCommand
+  try {
+    const textarea = document.createElement('textarea')
+    textarea.value = text
+    textarea.style.position = 'fixed'
+    textarea.style.left = '-9999px'
+    textarea.style.top = '-9999px'
+    textarea.style.opacity = '0'
+    document.body.appendChild(textarea)
+    textarea.focus()
+    textarea.select()
+    const ok = document.execCommand('copy')
+    document.body.removeChild(textarea)
+    if (ok) {
+      ElMessage.success('已复制到剪贴板')
+    } else {
+      ElMessage.error('复制失败，请手动复制')
+    }
   } catch {
     ElMessage.error('复制失败，请手动复制')
   }
