@@ -37,7 +37,7 @@
             <span class="category-header-title">分类管理</span>
             <div class="category-header-actions">
               <el-button size="small" @click="toggleExpandAll" :icon="allExpanded ? Fold : Expand" :title="allExpanded ? '全部收起' : '全部展开'" />
-              <el-button type="primary" size="small" @click="addCategoryDialogVisible = true" :icon="Plus">新增</el-button>
+              <el-button type="primary" size="small" @click="handleAddCategory" :icon="Plus">新增</el-button>
             </div>
           </div>
           <div class="category-tree-wrapper">
@@ -195,7 +195,7 @@
     </el-dialog>
 
     <!-- 分类对话框 -->
-    <el-dialog v-model="addCategoryDialogVisible" :title="editingCategory ? '编辑分类' : '新增分类'" width="400" append-to-body>
+    <el-dialog v-model="addCategoryDialogVisible" :title="editingCategory ? '编辑分类' : '新增分类'" width="400" append-to-body @close="resetCategoryForm">
       <el-form :model="categoryForm" label-width="80px">
         <el-form-item label="分类名称" required>
           <el-input v-model="categoryForm.name" />
@@ -488,7 +488,7 @@ const saveCategory = async () => {
       resetCategoryForm()
       await fetchCategories()
     } else {
-      ElMessage.error(response.data.msg || '操作失败')
+      ElMessage.error(response.data.message || response.data.msg || '操作失败')
     }
   } catch (error) {
     console.error('保存分类失败:', error)
@@ -503,6 +503,11 @@ const resetCategoryForm = () => {
   categoryForm.parentId = 0
   categoryForm.sort = 0
   editingCategory.value = null
+}
+
+const handleAddCategory = () => {
+  resetCategoryForm()
+  addCategoryDialogVisible.value = true
 }
 
 const addChildCategory = (parentData) => {
