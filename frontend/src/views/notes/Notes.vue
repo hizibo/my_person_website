@@ -234,14 +234,22 @@ import axios from 'axios'
 const API_BASE = '/api/note'
 const CATEGORY_API = '/api/note/category'
 
-// 配置 marked + highlight.js
+// 自定义渲染器：实现代码高亮（marked v18+ 不再支持 setOptions.highlight）
+const renderer = new marked.Renderer()
+const originalCodeRenderer = renderer.code.bind(renderer)
+renderer.code = (code, language) => {
+  let highlighted
+  if (language && hljs.getLanguage(language)) {
+    highlighted = hljs.highlight(code, { language }).value
+  } else {
+    highlighted = hljs.highlightAuto(code).value
+  }
+  return `<pre><code class="hljs language-${language || ''}">${highlighted}</code></pre>`
+}
+
+// 配置 marked
 marked.setOptions({
-  highlight: (code, lang) => {
-    if (lang && hljs.getLanguage(lang)) {
-      return hljs.highlight(code, { language: lang }).value
-    }
-    return hljs.highlightAuto(code).value
-  },
+  renderer,
   breaks: true,
   gfm: true
 })
