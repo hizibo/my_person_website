@@ -51,16 +51,28 @@
 </template>
 
 <script setup>
-import { ref, watch, computed } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const sidebarOpen = ref(false)
 const route = useRoute()
 const router = useRouter()
 
-// 登录状态
-const isLoggedIn = computed(() => !!localStorage.getItem('auth_token'))
-const username = computed(() => localStorage.getItem('auth_username') || '')
+// 登录状态（响应式，通过事件刷新）
+const isLoggedIn = ref(!!localStorage.getItem('auth_token'))
+const username = ref(localStorage.getItem('auth_username') || '')
+
+const refreshAuthState = () => {
+  isLoggedIn.value = !!localStorage.getItem('auth_token')
+  username.value = localStorage.getItem('auth_username') || ''
+}
+
+onMounted(() => {
+  window.addEventListener('auth-change', refreshAuthState)
+})
+onUnmounted(() => {
+  window.removeEventListener('auth-change', refreshAuthState)
+})
 
 // 路由变化时关闭侧边栏
 watch(() => route.path, () => {
@@ -81,6 +93,7 @@ const closeSidebarOnMobile = () => {
 const handleLogout = () => {
   localStorage.removeItem('auth_token')
   localStorage.removeItem('auth_username')
+  window.dispatchEvent(new CustomEvent('auth-change', { detail: { action: 'logout' } }))
   router.push('/tools')
 }
 </script>

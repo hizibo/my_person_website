@@ -18,6 +18,10 @@ app.use(ElementPlus, { locale: zhCn })
 app.use(router)
 app.mount('#app')
 
+// ========== 全局登录状态事件 ==========
+// 通过 window 事件通知各组件刷新登录状态
+window.dispatchEvent(new CustomEvent('auth-change', { detail: { action: 'init' } }))
+
 // ========== 全局 Axios 拦截器 ==========
 
 // 请求拦截：自动附加 Token
@@ -39,6 +43,7 @@ axios.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       localStorage.removeItem('auth_token')
       localStorage.removeItem('auth_username')
+      window.dispatchEvent(new CustomEvent('auth-change', { detail: { action: 'logout' } }))
       window.location.href = '/#/tools'
     }
     return Promise.reject(error)

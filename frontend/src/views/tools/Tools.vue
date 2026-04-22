@@ -144,6 +144,7 @@ const handleLogin = async () => {
       username.value = name
       showLogin.value = false
       loginForm.value = { username: '', password: '' }
+      window.dispatchEvent(new CustomEvent('auth-change', { detail: { action: 'login' } }))
       ElMessage.success('登录成功')
       // 登录后跳转到计划页
       router.push('/plan')
@@ -162,6 +163,7 @@ const handleLogout = () => {
   localStorage.removeItem('auth_username')
   isLoggedIn.value = false
   username.value = ''
+  window.dispatchEvent(new CustomEvent('auth-change', { detail: { action: 'logout' } }))
   ElMessage.success('已退出登录')
   router.push('/tools')
 }

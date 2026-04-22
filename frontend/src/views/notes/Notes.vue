@@ -12,7 +12,7 @@
             <p>• 查看笔记：双击笔记行查看详情</p>
             <p>• 编辑笔记：单击编辑按钮</p>
             <p>• 搜索功能：支持搜索标题、内容、标签</p>
-            <p>• 富文本编辑：支持多种格式和图片</p>
+            <p>• Markdown 编辑：支持左侧编辑、右侧实时预览</p>
           </div>
         </template>
         <el-icon class="info-icon" :size="18"><InfoFilled /></el-icon>
@@ -29,11 +29,9 @@
     <el-row :gutter="0" class="notes-row">
       <!-- 左侧分类树 -->
       <div class="category-col" :class="{ 'collapsed': categoryCollapsed }">
-        <!-- 折叠按钮（始终在分类列外部可见） -->
         <div class="collapse-btn" @click="categoryCollapsed = !categoryCollapsed" :title="categoryCollapsed ? '展开分类' : '收起分类'">
           <el-icon :size="14"><ArrowLeft v-if="!categoryCollapsed" /><ArrowRight v-else /></el-icon>
         </div>
-        <!-- 折叠内容 -->
         <div class="category-panel" :class="{ 'mobile-show': showMobileCategory }" :style="{ width: categoryCollapsed ? '0px' : '260px', minWidth: categoryCollapsed ? '0px' : '220px', maxWidth: categoryCollapsed ? '0px' : '320px' }">
           <div class="category-header">
             <span class="category-header-title">分类管理</span>
@@ -102,7 +100,7 @@
             </div>
           </div>
 
-          <!-- 笔记编辑器 -->
+          <!-- Markdown 编辑器 -->
           <div v-else class="note-editor">
             <div class="editor-header">
               <span class="editor-title">{{ editingNoteId ? '编辑笔记' : '新建笔记' }}</span>
@@ -128,7 +126,43 @@
                   <el-input v-model="noteForm.summary" type="textarea" :autosize="{ minRows: 2 }" placeholder="请输入摘要" />
                 </el-form-item>
                 <el-form-item label="内容" required>
-                  <QuillEditor v-model:content="noteForm.content" contentType="html" :options="editorOptions" class="quill-editor-mobile" />
+                  <!-- Markdown 编辑 + 预览区 -->
+                  <div class="md-editor-wrapper">
+                    <!-- 工具栏 -->
+                    <div class="md-toolbar">
+                      <span class="md-toolbar-label">撰写</span>
+                      <div class="md-toolbar-buttons">
+                        <el-tooltip content="标题" placement="bottom"><el-button size="small" @click="insertMd('heading')" :icon="Finished" /></el-tooltip>
+                        <el-tooltip content="加粗" placement="bottom"><el-button size="small" @click="insertMd('bold')" :icon="WarnTriangleFilled" /></el-tooltip>
+                        <el-tooltip content="斜体" placement="bottom"><el-button size="small" @click="insertMd('italic')" :icon="CircleCloseFilled" /></el-tooltip>
+                        <el-tooltip content="删除线" placement="bottom"><el-button size="small" @click="insertMd('strike')">~~</el-button></el-tooltip>
+                        <el-divider direction="vertical" />
+                        <el-tooltip content="行内代码" placement="bottom"><el-button size="small" @click="insertMd('code')">`</el-button></el-tooltip>
+                        <el-tooltip content="代码块" placement="bottom"><el-button size="small" @click="insertMd('codeblock')" :icon="Menu" /></el-tooltip>
+                        <el-tooltip content="引用" placement="bottom"><el-button size="small" @click="insertMd('quote')" :icon="ChatLineSquare" /></el-tooltip>
+                        <el-tooltip content="无序列表" placement="bottom"><el-button size="small" @click="insertMd('ul')" :icon="List" /></el-tooltip>
+                        <el-tooltip content="有序列表" placement="bottom"><el-button size="small" @click="insertMd('ol')" :icon="List" /></el-tooltip>
+                        <el-divider direction="vertical" />
+                        <el-tooltip content="链接" placement="bottom"><el-button size="small" @click="insertMd('link')" :icon="Link" /></el-tooltip>
+                        <el-tooltip content="图片" placement="bottom"><el-button size="small" @click="insertMd('image')" :icon="Picture" /></el-tooltip>
+                        <el-tooltip content="分割线" placement="bottom"><el-button size="small" @click="insertMd('hr')" :icon="Minus" /></el-tooltip>
+                        <el-tooltip content="表格" placement="bottom"><el-button size="small" @click="insertMd('table')" :icon="Grid" /></el-tooltip>
+                      </div>
+                      <el-divider class="toolbar-divider" direction="vertical" />
+                      <span class="md-toolbar-label preview-label">预览</span>
+                    </div>
+                    <!-- 编辑+预览区域 -->
+                    <div class="md-main">
+                      <textarea
+                        ref="mdTextareaRef"
+                        v-model="noteForm.content"
+                        class="md-textarea"
+                        placeholder="请输入 Markdown 内容，支持 GFM 语法..."
+                        @keydown.tab.prevent="handleTabKey"
+                      ></textarea>
+                      <div class="md-preview markdown-body" v-html="renderedContent"></div>
+                    </div>
+                  </div>
                 </el-form-item>
               </el-form>
             </div>
@@ -138,28 +172,21 @@
     </el-row>
 
     <!-- 查看笔记对话框 -->
-    <el-dialog v-model="viewDialogVisible" title="查看笔记" width="700" append-to-body class="view-dialog">
+    <el-dialog v-model="viewDialogVisible" title="查看笔记" width="800px" append-to-body class="view-dialog">
       <div class="view-content" v-if="viewForm">
-        <div class="view-field">
-          <label>标题</label>
-          <div class="view-value">{{ viewForm.title }}</div>
+        <div class="view-header">
+          <h2 class="view-title">{{ viewForm.title }}</h2>
+          <div class="view-meta">
+            <el-tag size="small" type="info">{{ viewForm.categoryName }}</el-tag>
+            <el-tag v-if="viewForm.tags" size="small" type="info" style="margin-left: 6px;">{{ viewForm.tags }}</el-tag>
+            <span class="view-date">{{ formatDate(viewForm.createTime) }}</span>
+          </div>
         </div>
-        <div class="view-field">
-          <label>分类</label>
-          <div class="view-value">{{ viewForm.categoryName }}</div>
+        <div class="view-summary" v-if="viewForm.summary">
+          <p>{{ viewForm.summary }}</p>
         </div>
-        <div class="view-field">
-          <label>标签</label>
-          <div class="view-value">{{ viewForm.tags || '无' }}</div>
-        </div>
-        <div class="view-field">
-          <label>摘要</label>
-          <div class="view-value article-format">{{ viewForm.summary || '无' }}</div>
-        </div>
-        <div class="view-field">
-          <label>内容</label>
-          <div class="view-value article-format" v-html="viewForm.content || '<span style=\'color:#999\'>暂无内容</span>'"></div>
-        </div>
+        <el-divider />
+        <div class="view-body markdown-body" v-html="renderedViewContent"></div>
       </div>
       <template #footer>
         <el-button @click="viewDialogVisible = false" size="small">关闭</el-button>
@@ -193,19 +220,48 @@
 
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
-import { Plus, Edit, Delete, Search, InfoFilled, Expand, Fold, ArrowDown, ArrowRight, ArrowLeft } from '@element-plus/icons-vue'
+import {
+  Plus, Edit, Delete, Search, InfoFilled, Expand, Fold,
+  ArrowDown, ArrowRight, ArrowLeft, Finished, WarnTriangleFilled,
+  CircleCloseFilled, Menu, ChatLineSquare, List as ListIcon, Link,
+  Picture, Minus, Grid
+} from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { QuillEditor } from '@vueup/vue-quill'
-import '@vueup/vue-quill/dist/vue-quill.snow.css'
+import { marked } from 'marked'
+import hljs from 'highlight.js'
 import axios from 'axios'
 
 const API_BASE = '/api/note'
 const CATEGORY_API = '/api/note/category'
 
-// 移动端分类面板显示状态
-const showMobileCategory = ref(false)
+// 配置 marked + highlight.js
+marked.setOptions({
+  highlight: (code, lang) => {
+    if (lang && hljs.getLanguage(lang)) {
+      return hljs.highlight(code, { language: lang }).value
+    }
+    return hljs.highlightAuto(code).value
+  },
+  breaks: true,
+  gfm: true
+})
 
-// 桌面端分类左右收起
+// 判断内容是否为 HTML（兼容旧富文本数据）
+const isHtmlContent = (content) => {
+  return content && typeof content === 'string' && /<[^>]+>/i.test(content)
+}
+
+const renderMarkdown = (content) => {
+  if (!content) return ''
+  if (isHtmlContent(content)) {
+    // 旧数据，直接返回 HTML
+    return content
+  }
+  return marked.parse(content)
+}
+
+// 移动端分类面板
+const showMobileCategory = ref(false)
 const categoryCollapsed = ref(false)
 
 // 分类树
@@ -225,20 +281,17 @@ const selectedCategoryName = computed(() => {
 const addCategoryDialogVisible = ref(false)
 const editingCategory = ref(null)
 const savingCategory = ref(false)
-const categoryForm = reactive({
-  name: '',
-  parentId: 0,
-  sort: 0
-})
+const categoryForm = reactive({ name: '', parentId: 0, sort: 0 })
 
 // 笔记列表
 const notes = ref([])
 const notesLoading = ref(false)
 const searchKeyword = ref('')
 
-// 笔记编辑器
+// Markdown 编辑器
 const showEditor = ref(false)
 const editingNoteId = ref(null)
+const mdTextareaRef = ref(null)
 const noteForm = reactive({
   title: '',
   categoryId: null,
@@ -252,43 +305,22 @@ const savingNote = ref(false)
 const viewDialogVisible = ref(false)
 const viewForm = ref(null)
 
-// 编辑器配置
-const editorOptions = {
-  modules: {
-    toolbar: [
-      ['bold', 'italic', 'underline', 'strike'],
-      ['blockquote', 'code-block'],
-      [{ 'header': 1 }, { 'header': 2 }],
-      [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-      [{ 'script': 'sub' }, { 'script': 'super' }],
-      [{ 'indent': '-1' }, { 'indent': '+1' }],
-      [{ 'size': ['small', false, 'large', 'huge'] }],
-      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-      [{ 'color': [] }, { 'background': [] }],
-      [{ 'font': [] }],
-      [{ 'align': [] }],
-      ['clean'],
-      ['link', 'image', 'video']
-    ]
-  },
-  placeholder: '请输入笔记内容...'
-}
+// 实时渲染内容
+const renderedContent = computed(() => renderMarkdown(noteForm.content))
+const renderedViewContent = computed(() => viewForm.value ? renderMarkdown(viewForm.value.content) : '')
 
-// 扁平化分类列表
+// 扁平化分类
 const flatCategories = computed(() => {
   const flatten = (nodes, result = []) => {
     nodes.forEach(node => {
       result.push({ id: node.id, name: node.name })
-      if (node.children && node.children.length > 0) {
-        flatten(node.children, result)
-      }
+      if (node.children && node.children.length > 0) flatten(node.children, result)
     })
     return result
   }
   return flatten(categoryTree.value)
 })
 
-// 获取所有节点 key
 const getAllNodeKeys = () => {
   const keys = []
   const collect = (nodes) => {
@@ -303,34 +335,112 @@ const getAllNodeKeys = () => {
   return keys
 }
 
-// 切换全部展开/收起
 const toggleExpandAll = () => {
   const tree = categoryTreeRef.value
   if (!tree) return
   if (allExpanded.value) {
-    const nodes = tree.store._getAllNodes()
-    nodes.forEach(node => { node.expanded = false })
+    tree.store._getAllNodes().forEach(node => { node.expanded = false })
     allExpanded.value = false
   } else {
-    const nodes = tree.store._getAllNodes()
-    nodes.forEach(node => { node.expanded = true })
+    tree.store._getAllNodes().forEach(node => { node.expanded = true })
     allExpanded.value = true
   }
 }
 
-// 切换单个节点
-const toggleNodeExpand = (node) => {
-  node.expanded = !node.expanded
-}
+const toggleNodeExpand = (node) => { node.expanded = !node.expanded }
 
-// 格式化日期
 const formatDate = (dateStr) => {
   if (!dateStr) return ''
   const date = new Date(dateStr)
   return date.toLocaleDateString('zh-CN') + ' ' + date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
 }
 
-// 获取分类树
+// ========== Markdown 工具栏插入 ==========
+const insertMd = (type) => {
+  const textarea = mdTextareaRef.value
+  if (!textarea) return
+  const start = textarea.selectionStart
+  const end = textarea.selectionEnd
+  const text = noteForm.content
+  const selected = text.substring(start, end)
+  let insert = ''
+  let cursorOffset = 0
+
+  switch (type) {
+    case 'heading':
+      insert = `\n## 标题\n`
+      cursorOffset = 4
+      break
+    case 'bold':
+      insert = `**${selected || '粗体文字'}**`
+      cursorOffset = selected ? insert.length : 2
+      break
+    case 'italic':
+      insert = `*${selected || '斜体文字'}*`
+      cursorOffset = selected ? insert.length : 1
+      break
+    case 'strike':
+      insert = `~~${selected || '删除线文字'}~~`
+      cursorOffset = selected ? insert.length : 2
+      break
+    case 'code':
+      insert = `\`${selected || 'code'}\``
+      cursorOffset = selected ? insert.length : 1
+      break
+    case 'codeblock':
+      insert = `\n\`\`\`javascript\n${selected || '// 代码'}\n\`\`\`\n`
+      cursorOffset = selected ? insert.length : 14
+      break
+    case 'quote':
+      insert = `\n> ${selected || '引用内容'}\n`
+      cursorOffset = selected ? insert.length : 3
+      break
+    case 'ul':
+      insert = `\n- ${selected || '列表项'}\n`
+      cursorOffset = selected ? insert.length : 3
+      break
+    case 'ol':
+      insert = `\n1. ${selected || '列表项'}\n`
+      cursorOffset = selected ? insert.length : 4
+      break
+    case 'link':
+      insert = `[${selected || '链接文字'}](url)`
+      cursorOffset = insert.length - 1
+      break
+    case 'image':
+      insert = `![${selected || '图片描述'}](image-url)`
+      cursorOffset = insert.length - 1
+      break
+    case 'hr':
+      insert = `\n---\n`
+      cursorOffset = insert.length
+      break
+    case 'table':
+      insert = `\n| 列1 | 列2 | 列3 |\n| --- | --- | --- |\n| 内容 | 内容 | 内容 |\n`
+      cursorOffset = insert.length
+      break
+    default:
+      insert = selected
+  }
+
+  noteForm.content = text.substring(0, start) + insert + text.substring(end)
+  // 回填后聚焦并定位光标
+  textarea.focus()
+  setTimeout(() => {
+    const pos = start + cursorOffset
+    textarea.setSelectionRange(pos, pos)
+  }, 0)
+}
+
+const handleTabKey = (e) => {
+  const textarea = mdTextareaRef.value
+  if (!textarea) return
+  const start = textarea.selectionStart
+  noteForm.content = noteForm.content.substring(0, start) + '  ' + noteForm.content.substring(start)
+  setTimeout(() => { textarea.setSelectionRange(start + 2, start + 2) }, 0)
+}
+
+// ========== 分类操作 ==========
 const fetchCategories = async () => {
   try {
     const response = await axios.get(`${CATEGORY_API}/list`)
@@ -340,8 +450,8 @@ const fetchCategories = async () => {
       const tree = []
       categories.forEach(cat => { cat.children = []; map[cat.id] = cat })
       categories.forEach(cat => {
-        if (cat.parentId === 0 || !map[cat.parentId]) { tree.push(cat) }
-        else { map[cat.parentId].children.push(cat) }
+        if (cat.parentId === 0 || !map[cat.parentId]) tree.push(cat)
+        else map[cat.parentId].children.push(cat)
       })
       categoryTree.value = tree
       defaultExpandedKeys.value = getAllNodeKeys()
@@ -358,7 +468,6 @@ const fetchCategories = async () => {
   }
 }
 
-// 保存分类
 const saveCategory = async () => {
   if (!categoryForm.name.trim()) { ElMessage.warning('请输入分类名称'); return }
   savingCategory.value = true
@@ -382,15 +491,24 @@ const saveCategory = async () => {
 }
 
 const resetCategoryForm = () => {
-  categoryForm.name = ''; categoryForm.parentId = 0; categoryForm.sort = 0; editingCategory.value = null
+  categoryForm.name = ''
+  categoryForm.parentId = 0
+  categoryForm.sort = 0
+  editingCategory.value = null
 }
 
 const addChildCategory = (parentData) => {
-  resetCategoryForm(); categoryForm.parentId = parentData.id; addCategoryDialogVisible.value = true
+  resetCategoryForm()
+  categoryForm.parentId = parentData.id
+  addCategoryDialogVisible.value = true
 }
 
 const editCategory = (data) => {
-  editingCategory.value = data.id; categoryForm.name = data.name; categoryForm.parentId = data.parentId || 0; categoryForm.sort = data.sort || 0; addCategoryDialogVisible.value = true
+  editingCategory.value = data.id
+  categoryForm.name = data.name
+  categoryForm.parentId = data.parentId || 0
+  categoryForm.sort = data.sort || 0
+  addCategoryDialogVisible.value = true
 }
 
 const deleteCategory = async (data) => {
@@ -406,6 +524,7 @@ const deleteCategory = async (data) => {
 
 const handleCategoryClick = (data) => { selectedCategoryId.value = data.id; fetchNotesByCategory(data.id) }
 
+// ========== 笔记操作 ==========
 const fetchNotesByCategory = async (categoryId) => {
   notesLoading.value = true
   try {
@@ -434,7 +553,13 @@ const searchNotes = async () => {
 }
 
 const createNewNote = () => {
-  editingNoteId.value = null; noteForm.title = ''; noteForm.categoryId = selectedCategoryId.value; noteForm.content = ''; noteForm.summary = ''; noteForm.tags = ''; showEditor.value = true
+  editingNoteId.value = null
+  noteForm.title = ''
+  noteForm.categoryId = selectedCategoryId.value
+  noteForm.content = ''
+  noteForm.summary = ''
+  noteForm.tags = ''
+  showEditor.value = true
 }
 
 const editNote = async (row) => {
@@ -442,7 +567,13 @@ const editNote = async (row) => {
     const response = await axios.get(`${API_BASE}/detail/${row.id}`)
     if (response.data && response.data.code === 200) {
       const note = response.data.data
-      editingNoteId.value = note.id; noteForm.title = note.title; noteForm.categoryId = note.categoryId; noteForm.content = note.content || ''; noteForm.summary = note.summary || ''; noteForm.tags = note.tags || ''; showEditor.value = true
+      editingNoteId.value = note.id
+      noteForm.title = note.title
+      noteForm.categoryId = note.categoryId
+      noteForm.content = note.content || ''
+      noteForm.summary = note.summary || ''
+      noteForm.tags = note.tags || ''
+      showEditor.value = true
     } else { ElMessage.error('获取笔记详情失败') }
   } catch (error) { console.error('获取笔记详情失败:', error); ElMessage.error('获取笔记详情失败') }
 }
@@ -453,17 +584,14 @@ const viewNote = async (row) => {
     if (response.data && response.data.code === 200) {
       const note = response.data.data
       const cat = flatCategories.value.find(c => c.id === note.categoryId)
-      viewForm.value = {
-        ...note,
-        categoryName: cat ? cat.name : '未知'
-      }
+      viewForm.value = { ...note, categoryName: cat ? cat.name : '未知' }
       viewDialogVisible.value = true
     } else { ElMessage.error('获取笔记详情失败') }
   } catch (error) { console.error('获取笔记详情失败:', error); ElMessage.error('获取笔记详情失败') }
 }
 
 const goEditFromView = () => {
- const row = { id: viewForm.value.id }
+  const row = { id: viewForm.value.id }
   viewDialogVisible.value = false
   editNote(row)
 }
@@ -476,7 +604,9 @@ const saveNote = async () => {
     const api = editingNoteId.value ? `${API_BASE}/update` : `${API_BASE}/add`
     const response = await axios[editingNoteId.value ? 'put' : 'post'](api, { ...noteForm, id: editingNoteId.value })
     if (response.data && response.data.code === 200) {
-      ElMessage.success(editingNoteId.value ? '更新成功' : '添加成功'); showEditor.value = false; await fetchNotesByCategory(selectedCategoryId.value)
+      ElMessage.success(editingNoteId.value ? '更新成功' : '添加成功')
+      showEditor.value = false
+      await fetchNotesByCategory(selectedCategoryId.value)
     } else { ElMessage.error(response.data.msg || '保存失败') }
   } catch (error) { console.error('保存笔记失败:', error); ElMessage.error('保存失败') }
   finally { savingNote.value = false }
@@ -497,477 +627,290 @@ onMounted(() => { fetchCategories() })
 </script>
 
 <style scoped>
-.notes-page {
-  padding: 16px;
-}
+.notes-page { padding: 16px; }
 
-.page-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 16px;
-}
+.page-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.page-title { font-size: 18px; font-weight: 600; color: #333; }
+.info-icon { color: #909399; cursor: pointer; transition: color 0.3s; }
+.info-icon:hover { color: #409eff; }
+.info-tooltip-content { max-width: 280px; line-height: 1.8; }
+.info-tooltip-content p { margin: 4px 0; }
 
-.page-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-}
-
-.info-icon {
-  color: #909399;
-  cursor: pointer;
-  transition: color 0.3s;
-}
-
-.info-icon:hover {
-  color: #409eff;
-}
-
-.info-tooltip-content {
-  max-width: 280px;
-  line-height: 1.8;
-}
-
-.info-tooltip-content p {
-  margin: 4px 0;
-}
-
-/* 移动端分类切换按钮 */
-.mobile-category-toggle {
-  display: none;
-  margin-bottom: 12px;
-}
-
-.notes-row {
-  display: flex;
-}
+.mobile-category-toggle { display: none; margin-bottom: 12px; }
+.notes-row { display: flex; }
 
 /* 分类列 */
-.category-col {
-  flex-shrink: 0;
-  display: flex;
-  overflow: visible;
-  position: relative;
-}
-
-.category-col.collapsed {
-  flex-shrink: 0;
-}
-
-.category-col.collapsed .category-panel {
-  display: none;
-}
+.category-col { flex-shrink: 0; display: flex; overflow: visible; position: relative; }
+.category-col.collapsed { flex-shrink: 0; }
+.category-col.collapsed .category-panel { display: none; }
 
 .collapse-btn {
-  flex-shrink: 0;
-  width: 16px;
-  height: 48px;
-  background: #e4e7ed;
-  border-radius: 0 4px 4px 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 10;
-  transition: background 0.2s;
-  align-self: center;
-  margin-left: -1px;
+  flex-shrink: 0; width: 16px; height: 48px; background: #e4e7ed;
+  border-radius: 0 4px 4px 0; display: flex; align-items: center;
+  justify-content: center; cursor: pointer; z-index: 10;
+  transition: background 0.2s; align-self: center; margin-left: -1px;
 }
-
-.collapse-btn:hover {
-  background: #c0c4cc;
-}
+.collapse-btn:hover { background: #c0c4cc; }
 
 .category-panel {
-  flex-shrink: 0;
-  transition: width 0.3s ease, min-width 0.3s ease, max-width 0.3s ease;
-  overflow: hidden;
-  width: 260px;
-  min-width: 220px;
-  max-width: 320px;
-  border: 1px solid #e4e7ed;
-  border-radius: 8px;
-  padding: 12px;
-  background: #fff;
-  position: sticky;
-  top: 0;
-  max-height: calc(100vh - 120px);
+  flex-shrink: 0; transition: width 0.3s ease, min-width 0.3s ease, max-width 0.3s ease;
+  overflow: hidden; width: 260px; min-width: 220px; max-width: 320px;
+  border: 1px solid #e4e7ed; border-radius: 8px; padding: 12px;
+  background: #fff; position: sticky; top: 0; max-height: calc(100vh - 120px);
 }
-
-.category-tree-wrapper {
-  overflow-y: auto;
-  max-height: calc(100vh - 180px);
-}
-
-.category-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.category-header-title {
-  font-weight: bold;
-  font-size: 14px;
-}
-
-.category-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.custom-tree-node {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 13px;
-  padding-right: 4px;
-}
-
-.node-actions {
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.custom-tree-node:hover .node-actions {
-  opacity: 1;
-}
+.category-tree-wrapper { overflow-y: auto; max-height: calc(100vh - 180px); }
+.category-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+.category-header-title { font-weight: bold; font-size: 14px; }
+.category-header-actions { display: flex; align-items: center; gap: 6px; }
+.custom-tree-node { flex: 1; display: flex; align-items: center; justify-content: space-between; font-size: 13px; padding-right: 4px; }
+.node-actions { opacity: 0; transition: opacity 0.2s; }
+.custom-tree-node:hover .node-actions { opacity: 1; }
 
 /* 笔记列 */
-.notes-col {
+.notes-col { flex: 1; min-width: 0; }
+.notes-panel { border: 1px solid #e4e7ed; border-radius: 8px; padding: 16px; background: #fff; min-height: 400px; }
+.notes-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
+.notes-header-title { font-weight: bold; font-size: 14px; }
+.header-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.table-wrapper { overflow-x: auto; }
+:deep(.el-table__body-wrapper .el-table__row) { cursor: pointer; }
+
+/* 编辑器头部 */
+.editor-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #e4e7ed; padding-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+.editor-title { font-weight: bold; font-size: 14px; }
+.editor-actions { display: flex; gap: 8px; }
+.editor-form { margin-top: 12px; }
+
+/* ========== Markdown 编辑器样式 ========== */
+.md-editor-wrapper {
+  border: 1px solid #e4e7ed;
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.md-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: #fafafa;
+  border-bottom: 1px solid #e4e7ed;
+  flex-wrap: wrap;
+}
+
+.md-toolbar-label {
+  font-size: 12px;
+  color: #909399;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.preview-label {
+  margin-left: 4px;
+}
+
+.md-toolbar-buttons {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-wrap: wrap;
+}
+
+.toolbar-divider {
+  margin: 0 4px;
+  height: 16px;
+}
+
+.md-main {
+  display: flex;
+  height: 420px;
+}
+
+.md-textarea {
   flex: 1;
   min-width: 0;
-}
-
-.notes-panel {
-  border: 1px solid #e4e7ed;
-  border-radius: 8px;
-  padding: 16px;
-  background: #fff;
-  min-height: 400px;
-}
-
-.notes-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.notes-header-title {
-  font-weight: bold;
+  resize: none;
+  border: none;
+  outline: none;
+  padding: 14px 16px;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
   font-size: 14px;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.table-wrapper {
-  overflow-x: auto;
-}
-
-:deep(.el-table__body-wrapper .el-table__row) {
-  cursor: pointer;
-}
-
-/* ========== 查看对话框样式 ========== */
-.view-content {
-  padding: 8px 0;
-}
-
-.view-field {
-  margin-bottom: 20px;
-}
-
-.view-field label {
-  display: block;
-  font-size: 13px;
-  color: #909399;
-  margin-bottom: 6px;
-  font-weight: 500;
-}
-
-.view-value {
-  font-size: 14px;
-  color: #303133;
-  line-height: 1.6;
-}
-
-.view-value.article-format {
-  background: #fafafa;
-  padding: 16px;
-  border-radius: 6px;
-  border: 1px solid #ebeef5;
-  min-height: 80px;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-/* 编辑器 */
-.editor-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  border-bottom: 1px solid #e4e7ed;
-  padding-bottom: 10px;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.editor-title {
-  font-weight: bold;
-  font-size: 14px;
-}
-
-.editor-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.editor-form {
-  margin-top: 12px;
-}
-
-/* Quill 内容区排版优化 */
-.ql-editor.ql-blank::before {
-  color: #c0c4cc;
-  font-style: normal;
-}
-
-.ql-editor {
-  min-height: 320px;
-  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  font-size: 15px;
   line-height: 1.8;
-  color: #2c2c2c;
-  padding: 16px 20px;
+  color: #24292f;
+  background: #fff;
+  box-sizing: border-box;
+  tab-size: 2;
 }
 
-.ql-editor p {
-  margin: 0 0 12px;
+.md-textarea::placeholder {
+  color: #c0c4cc;
+  font-style: italic;
 }
 
-.ql-editor h1,
-.ql-editor h2,
-.ql-editor h3,
-.ql-editor h4,
-.ql-editor h5,
-.ql-editor h6 {
+.md-preview {
+  flex: 1;
+  min-width: 0;
+  border-left: 1px solid #e4e7ed;
+  overflow-y: auto;
+  padding: 14px 18px;
+  background: #fafafa;
+  box-sizing: border-box;
+}
+
+/* ========== Markdown 渲染样式（与 GitHub 风格一致） ========== */
+.markdown-body {
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #24292f;
+  word-wrap: break-word;
+}
+
+:deep(.markdown-body h1),
+:deep(.markdown-body h2),
+:deep(.markdown-body h3),
+:deep(.markdown-body h4),
+:deep(.markdown-body h5),
+:deep(.markdown-body h6) {
+  margin-top: 24px;
+  margin-bottom: 16px;
   font-weight: 600;
-  line-height: 1.4;
-  margin: 20px 0 10px;
+  line-height: 1.25;
+  border-bottom: 1px solid #eaecef;
+  padding-bottom: 8px;
 }
 
-.ql-editor h1 { font-size: 22px; }
-.ql-editor h2 { font-size: 19px; }
-.ql-editor h3 { font-size: 17px; }
+:deep(.markdown-body h1) { font-size: 2em; }
+:deep(.markdown-body h2) { font-size: 1.5em; }
+:deep(.markdown-body h3) { font-size: 1.25em; }
+:deep(.markdown-body h4) { font-size: 1em; }
 
-.ql-editor blockquote {
-  border-left: 3px solid #d0d7de;
-  padding: 4px 16px;
+:deep(.markdown-body p) { margin: 0 0 14px; }
+
+:deep(.markdown-body blockquote) {
   margin: 12px 0;
+  padding: 4px 16px;
+  border-left: 3px solid #d0d7de;
   color: #57606a;
   background: #f6f8fa;
   border-radius: 0 4px 4px 0;
 }
 
-.ql-editor pre.ql-syntax {
+:deep(.markdown-body pre) {
   background: #f6f8fa;
   border: 1px solid #e1e4e8;
   border-radius: 6px;
   padding: 14px 16px;
-  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
-  font-size: 13px;
-  line-height: 1.7;
-  color: #24292f;
   overflow-x: auto;
   margin: 12px 0;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 13px;
+  line-height: 1.7;
 }
 
-.ql-editor code {
-  background: #f0f0f0;
+:deep(.markdown-body code) {
+  background: #f0f2f5;
   border-radius: 3px;
   padding: 1px 5px;
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
   font-size: 13px;
   color: #e74c3c;
 }
 
-.ql-editor ul,
-.ql-editor ol {
+:deep(.markdown-body pre code) {
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: #24292f;
+  font-size: 13px;
+}
+
+:deep(.markdown-body ul),
+:deep(.markdown-body ol) {
   padding-left: 24px;
   margin: 8px 0 12px;
 }
 
-.ql-editor li {
-  margin: 4px 0;
-  line-height: 1.8;
+:deep(.markdown-body li) { margin: 4px 0; line-height: 1.8; }
+:deep(.markdown-body li > ul),
+:deep(.markdown-body li > ol) { margin: 4px 0; }
+
+:deep(.markdown-body hr) { border: none; border-top: 1px solid #e1e4e8; margin: 20px 0; }
+
+:deep(.markdown-body a) { color: #0969da; text-decoration: none; }
+:deep(.markdown-body a:hover) { text-decoration: underline; }
+
+:deep(.markdown-body img) { max-width: 100%; border-radius: 6px; }
+
+:deep(.markdown-body table) {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 12px 0;
+  font-size: 13px;
+  overflow-x: auto;
+  display: block;
 }
 
-.ql-editor hr {
-  border: none;
-  border-top: 1px solid #e1e4e8;
-  margin: 16px 0;
+:deep(.markdown-body table th),
+:deep(.markdown-body table td) {
+  border: 1px solid #d0d7de;
+  padding: 8px 12px;
+  text-align: left;
 }
 
-.ql-editor a {
-  color: #0969da;
-  text-decoration: none;
+:deep(.markdown-body table th) {
+  background: #f6f8fa;
+  font-weight: 600;
 }
 
-.ql-editor a:hover {
-  text-decoration: underline;
+:deep(.markdown-body table tr:nth-child(even)) {
+  background: #f6f8fa;
 }
 
-/* Quill 工具栏美化 */
-.ql-toolbar.ql-snow {
-  border: 1px solid #e4e7ed;
-  border-bottom: none;
-  border-radius: 6px 6px 0 0;
-  padding: 8px 10px;
-  background: #fafafa;
-}
-
-.ql-container.ql-snow {
-  border: 1px solid #e4e7ed;
-  border-radius: 0 0 6px 6px;
-  font-family: inherit;
-}
-
-.ql-snow .ql-picker {
-  color: #606266;
-}
-
-.ql-snow .ql-picker-label {
-  padding: 2px 6px;
-}
-
-.ql-snow .ql-stroke {
-  stroke: #606266;
-}
-
-.ql-snow .ql-fill {
-  fill: #606266;
-}
-
-.ql-snow .ql-picker.ql-expanded .ql-picker-label {
-  color: #409eff;
-  border-color: #409eff;
-}
-
-/* Quill 编辑器高度 */
-.quill-editor-mobile {
-  height: 400px;
-  margin-bottom: 20px;
-}
+/* ========== 查看对话框样式 ========== */
+.view-content { padding: 8px 0; }
+.view-header { margin-bottom: 12px; }
+.view-title { font-size: 20px; font-weight: 600; color: #1f2328; margin: 0 0 10px; }
+.view-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.view-date { font-size: 13px; color: #8b949e; margin-left: 8px; }
+.view-summary { background: #f6f8fa; border-radius: 6px; padding: 12px 16px; font-size: 14px; color: #57606a; line-height: 1.6; margin-bottom: 16px; }
+.view-summary p { margin: 0; }
+.view-body { line-height: 1.8; }
 
 /* ========== 响应式：平板 ========== */
 @media screen and (max-width: 1024px) {
-  .notes-page {
-    padding: 12px;
-  }
-
-  .category-panel {
-    max-height: calc(100vh - 100px);
-  }
-
-  .quill-editor-mobile {
-    height: 350px;
-  }
+  .notes-page { padding: 12px; }
+  .category-panel { max-height: calc(100vh - 100px); }
+  .md-main { height: 360px; }
 }
 
 /* ========== 响应式：手机 ========== */
 @media screen and (max-width: 768px) {
-  .notes-page {
-    padding: 10px;
-  }
+  .notes-page { padding: 10px; }
+  .page-header { margin-bottom: 12px; }
+  .page-title { font-size: 16px; }
+  .mobile-category-toggle { display: block; }
+  .category-col { width: 100% !important; max-width: 100% !important; min-width: 100% !important; flex: 0 0 100% !important; margin-bottom: 12px; }
+  .category-col .collapse-btn { display: none; }
+  .category-col .category-panel { width: 100% !important; max-width: 100% !important; min-width: 100% !important; position: static; max-height: none; display: none; }
+  .category-panel.mobile-show { display: block; }
+  .notes-col { width: 100% !important; max-width: 100% !important; flex: 0 0 100% !important; }
+  .notes-panel { padding: 12px; }
+  .notes-header { flex-direction: column; align-items: flex-start; }
+  .header-actions { width: 100%; }
+  .header-actions .el-input { flex: 1; }
+  .editor-header { flex-direction: column; align-items: flex-start; }
 
-  .page-header {
-    margin-bottom: 12px;
-  }
-
-  .page-title {
-    font-size: 16px;
-  }
-
-  .mobile-category-toggle {
-    display: block;
-  }
-
-  .category-col {
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 100% !important;
-    flex: 0 0 100% !important;
-    margin-bottom: 12px;
-  }
-
-  .category-col .collapse-btn {
-    display: none;
-  }
-
-  .category-col .category-panel {
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 100% !important;
-    position: static;
-    max-height: none;
-    display: none;
-  }
-
-  .category-panel.mobile-show {
-    display: block;
-  }
-
-  .notes-col {
-    width: 100% !important;
-    max-width: 100% !important;
-    flex: 0 0 100% !important;
-  }
-
-  .notes-panel {
-    padding: 12px;
-  }
-
-  .notes-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .header-actions {
-    width: 100%;
-  }
-
-  .header-actions .el-input {
-    flex: 1;
-  }
-
-  .editor-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .quill-editor-mobile {
-    height: 300px;
-  }
+  /* 手机：编辑器和预览上下排列 */
+  .md-main { flex-direction: column; height: auto; }
+  .md-textarea { height: 280px; border-bottom: 1px solid #e4e7ed; border-right: none; }
+  .md-preview { height: 280px; border-left: none; }
 }
 
-/* ========== 响应式：小手机 ========== */
 @media screen and (max-width: 480px) {
-  .quill-editor-mobile {
-    height: 250px;
-  }
+  .md-textarea { height: 220px; }
+  .md-preview { height: 220px; }
 }
 </style>
