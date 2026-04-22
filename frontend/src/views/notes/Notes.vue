@@ -172,26 +172,26 @@
     </el-row>
 
     <!-- 查看笔记对话框 -->
-    <el-dialog v-model="viewDialogVisible" title="查看笔记" width="800px" append-to-body class="view-dialog">
-      <div class="view-content" v-if="viewForm">
-        <div class="view-header">
-          <h2 class="view-title">{{ viewForm.title }}</h2>
-          <div class="view-meta">
-            <el-tag size="small" type="info">{{ viewForm.categoryName }}</el-tag>
-            <el-tag v-if="viewForm.tags" size="small" type="info" style="margin-left: 6px;">{{ viewForm.tags }}</el-tag>
-            <span class="view-date">{{ formatDate(viewForm.createTime) }}</span>
+    <el-dialog v-model="viewDialogVisible" fullscreen append-to-body class="view-dialog">
+      <template #header>
+        <div class="view-dialog-header">
+          <h2 class="view-dialog-title">{{ viewForm ? viewForm.title : '' }}</h2>
+          <div class="view-dialog-actions">
+            <div class="view-meta">
+              <el-tag v-if="viewForm" size="small" type="info">{{ viewForm.categoryName }}</el-tag>
+              <el-tag v-if="viewForm && viewForm.tags" size="small" type="info" style="margin-left: 6px;">{{ viewForm.tags }}</el-tag>
+              <span class="view-date">{{ viewForm ? formatDate(viewForm.createTime) : '' }}</span>
+            </div>
+            <el-button type="primary" @click="goEditFromView" :icon="Edit" size="small">修改</el-button>
           </div>
         </div>
+      </template>
+      <div class="view-content" v-if="viewForm">
         <div class="view-summary" v-if="viewForm.summary">
           <p>{{ viewForm.summary }}</p>
         </div>
-        <el-divider />
         <div class="view-body markdown-body" v-html="renderedViewContent"></div>
       </div>
-      <template #footer>
-        <el-button @click="viewDialogVisible = false" size="small">关闭</el-button>
-        <el-button type="primary" @click="goEditFromView" :icon="Edit" size="small">修改</el-button>
-      </template>
     </el-dialog>
 
     <!-- 分类对话框 -->
@@ -688,6 +688,7 @@ onMounted(() => { fetchCategories() })
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  width: 100%;
 }
 
 .md-toolbar {
@@ -869,13 +870,17 @@ onMounted(() => { fetchCategories() })
   background: #f6f8fa;
 }
 
-/* ========== 查看对话框样式 ========== */
-.view-content { padding: 8px 0; }
-.view-header { margin-bottom: 12px; }
-.view-title { font-size: 20px; font-weight: 600; color: #1f2328; margin: 0 0 10px; }
+/* ========== 查看对话框样式（全屏） ========== */
+.view-dialog :deep(.el-dialog__header) { padding: 16px 20px; border-bottom: 1px solid #e4e7ed; margin-right: 0; }
+.view-dialog :deep(.el-dialog__body) { padding: 20px 32px; height: calc(100vh - 80px); overflow-y: auto; }
+.view-dialog :deep(.el-dialog__close) { font-size: 20px; }
+.view-dialog-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.view-dialog-title { font-size: 20px; font-weight: 600; color: #1f2328; margin: 0; }
+.view-dialog-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .view-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .view-date { font-size: 13px; color: #8b949e; margin-left: 8px; }
-.view-summary { background: #f6f8fa; border-radius: 6px; padding: 12px 16px; font-size: 14px; color: #57606a; line-height: 1.6; margin-bottom: 16px; }
+.view-content { }
+.view-summary { background: #f6f8fa; border-radius: 6px; padding: 12px 16px; font-size: 14px; color: #57606a; line-height: 1.6; margin-bottom: 20px; }
 .view-summary p { margin: 0; }
 .view-body { line-height: 1.8; }
 
