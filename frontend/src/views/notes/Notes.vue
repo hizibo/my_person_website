@@ -44,12 +44,13 @@
             <el-tree ref="categoryTreeRef" :data="categoryTree" :props="{ label: 'name', children: 'children' }" node-key="id" highlight-current :expand-on-click-node="false" :default-expanded-keys="defaultExpandedKeys" @node-click="handleCategoryClick">
               <template #default="{ node, data }">
                 <span class="custom-tree-node">
-                  <span>
+                  <span class="node-label">
                     <el-icon v-if="data.children && data.children.length" @click.stop="toggleNodeExpand(node)" style="cursor: pointer; margin-right: 4px;">
                       <ArrowRight v-if="!node.expanded" />
                       <ArrowDown v-else />
                     </el-icon>
-                    {{ node.label }}
+                    <span class="category-name">{{ node.label }}</span>
+                    <span v-if="data.noteCount > 0" class="note-count-badge">{{ data.noteCount }}</span>
                   </span>
                   <span class="node-actions">
                     <el-button link type="primary" size="small" @click.stop="addChildCategory(data)" :icon="Plus"></el-button>
@@ -254,11 +255,12 @@ marked.setOptions({
 // 自定义渲染器：实现代码高亮和图片支持
 const renderer = new marked.Renderer()
 
-// 修复代码块渲染（marked v18+ 签名：code(code, language)）
-renderer.code = function(code, language) {
+// marked v18 签名变更：code(token) / image(token)，参数改为对象
+renderer.code = function(token) {
   let highlighted
-  const lang = language || ''
-  
+  const lang = token.lang || ''
+  const code = token.text || ''
+
   if (lang && hljs.getLanguage(lang)) {
     try {
       highlighted = hljs.highlight(code, { language: lang }).value
@@ -268,19 +270,20 @@ renderer.code = function(code, language) {
   } else {
     highlighted = hljs.highlightAuto(code).value
   }
-  
+
   return `<pre><code class="hljs language-${lang}">${highlighted}</code></pre>`
 }
 
-// 修复图片渲染：确保图片语法正确解析
-renderer.image = function(href, title, text) {
+renderer.image = function(token) {
+  const href = token.href || ''
+  const title = token.title || ''
+  const text = token.text || ''
   const titleAttr = title ? ` title="${title}"` : ''
-  const altAttr = text || ''
-  return `<img src="${href}" alt="${altAttr}"${titleAttr} style="max-width: 100%; border-radius: 6px;" />`
+  return `<img src="${href}" alt="${text}"${titleAttr} style="max-width: 100%; border-radius: 6px;" />`
 }
 
-// 应用自定义渲染器
-marked.use({ renderer })
+// 应用自定义渲染器 + 同步模式（marked v18 parse 默认异步，需显式关闭）
+marked.use({ renderer, async: false })
 
 // 判断内容是否为 HTML（兼容旧富文本数据）
 const isHtmlContent = (content) => {
@@ -602,6 +605,16 @@ const fetchCategories = async () => {
         if (cat.parentId === 0 || !map[cat.parentId]) tree.push(cat)
         else map[cat.parentId].children.push(cat)
       })
+      // 递归计算含子分类的总笔记数
+      const sumNoteCount = (node) => {
+        let total = node.noteCount || 0
+        if (node.children) {
+          node.children.forEach(child => { total += sumNoteCount(child) })
+        }
+        node.noteCount = total
+        return total
+      }
+      tree.forEach(node => sumNoteCount(node))
       categoryTree.value = tree
       defaultExpandedKeys.value = getAllNodeKeys()
       if (tree.length > 0 && !selectedCategoryId.value) {
@@ -829,6 +842,15 @@ onMounted(() => { fetchCategories() })
 .category-header-title { font-weight: bold; font-size: 14px; }
 .category-header-actions { display: flex; align-items: center; gap: 6px; }
 .custom-tree-node { flex: 1; display: flex; align-items: center; justify-content: space-between; font-size: 13px; padding-right: 4px; }
+.node-label { display: inline-flex; align-items: center; gap: 6px; }
+.category-name { line-height: 1; }
+.note-count-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 18px; height: 18px; padding: 0 5px;
+  font-size: 11px; font-weight: 500; line-height: 1;
+  color: #8b949e; background: #f0f2f5; border-radius: 9px;
+  user-select: none;
+}
 .node-actions { opacity: 0; transition: opacity 0.2s; }
 .custom-tree-node:hover .node-actions { opacity: 1; }
 
