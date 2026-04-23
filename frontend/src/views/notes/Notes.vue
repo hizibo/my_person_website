@@ -106,27 +106,43 @@
             <div class="editor-header">
               <span class="editor-title">{{ editingNoteId ? '编辑笔记' : '新建笔记' }}</span>
               <div class="editor-actions">
+                <el-button size="small" @click="metaCollapsed = !metaCollapsed">
+                  <el-icon><component :is="metaCollapsed ? 'Bottom' : 'Top'" /></el-icon>
+                  {{ metaCollapsed ? '展开详情' : '收起详情' }}
+                </el-button>
                 <el-button size="small" @click="cancelEdit">取消</el-button>
                 <el-button type="primary" size="small" @click="saveNote" :loading="savingNote">保存</el-button>
               </div>
             </div>
-            <div class="editor-form">
-              <el-form :model="noteForm" label-width="70px" size="small">
-                <el-form-item label="标题" required>
-                  <el-input v-model="noteForm.title" placeholder="请输入笔记标题" />
-                </el-form-item>
-                <el-form-item label="分类">
-                  <el-select v-model="noteForm.categoryId" placeholder="选择分类" style="width: 100%;">
-                    <el-option v-for="cat in flatCategories" :key="cat.id" :label="cat.name" :value="cat.id" />
-                  </el-select>
-                </el-form-item>
-                <el-form-item label="标签">
-                  <el-input v-model="noteForm.tags" placeholder="多个标签用逗号分隔" />
-                </el-form-item>
-                <el-form-item label="摘要">
-                  <el-input v-model="noteForm.summary" type="textarea" :autosize="{ minRows: 2 }" placeholder="请输入摘要" />
-                </el-form-item>
-                <el-form-item label="内容" required>
+            <div class="editor-form" :class="{ 'meta-collapsed': metaCollapsed }">
+              <!-- 元信息折叠区 -->
+              <el-collapse-transition>
+                <div v-show="!metaCollapsed" class="meta-section">
+                  <el-form :model="noteForm" label-width="70px" size="small">
+                    <el-form-item label="标题" required>
+                      <el-input v-model="noteForm.title" placeholder="请输入笔记标题" />
+                    </el-form-item>
+                    <el-form-item label="分类">
+                      <el-select v-model="noteForm.categoryId" placeholder="选择分类" style="width: 100%;">
+                        <el-option v-for="cat in flatCategories" :key="cat.id" :label="cat.name" :value="cat.id" />
+                      </el-select>
+                    </el-form-item>
+                    <el-form-item label="标签">
+                      <el-input v-model="noteForm.tags" placeholder="多个标签用逗号分隔" />
+                    </el-form-item>
+                    <el-form-item label="摘要">
+                      <el-input v-model="noteForm.summary" type="textarea" :autosize="{ minRows: 2 }" placeholder="请输入摘要" />
+                    </el-form-item>
+                  </el-form>
+                </div>
+              </el-collapse-transition>
+              <!-- 聚焦提示 -->
+              <div v-if="!metaCollapsed" class="focus-hint">
+                <el-icon><InfoFilled /></el-icon> 收起详情可专注编辑内容
+              </div>
+              <!-- 内容区标题 -->
+              <div class="content-label">内容</div>
+              <el-form-item label="内容" required class="content-item">
                   <!-- Markdown 编辑 + 预览区 -->
                   <!-- 隐藏的图片上传 input -->
                   <input
@@ -234,7 +250,7 @@ import {
   Plus, Edit, Delete, Search, InfoFilled, Expand, Fold,
   ArrowDown, ArrowRight, ArrowLeft, Finished, WarnTriangleFilled,
   CircleCloseFilled, Menu, ChatLineSquare, List as ListIcon, Link,
-  Picture, Minus, Grid, UploadFilled
+  Picture, Minus, Grid, UploadFilled, Top, Bottom
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { marked } from 'marked'
@@ -343,6 +359,7 @@ const noteForm = reactive({
   summary: '',
   tags: ''
 })
+const metaCollapsed = ref(false)
 const savingNote = ref(false)
 
 // 查看笔记
@@ -866,8 +883,21 @@ onMounted(() => { fetchCategories() })
 /* 编辑器头部 */
 .editor-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #e4e7ed; padding-bottom: 10px; flex-wrap: wrap; gap: 8px; }
 .editor-title { font-weight: bold; font-size: 14px; }
-.editor-actions { display: flex; gap: 8px; }
-.editor-form { margin-top: 12px; }
+.editor-actions { display: flex; gap: 8px; align-items: center; }
+.editor-form { margin-top: 12px; padding: 12px 16px; }
+.editor-form .el-form-item { margin-bottom: 12px; }
+.editor-form .el-form-item__label { line-height: 32px; }
+.meta-section { padding-bottom: 4px; }
+.focus-hint {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 12px; color: #909399; padding: 0 0 8px 70px;
+}
+.content-label {
+  font-size: 14px; color: #606266;
+  padding: 0 0 6px 70px; font-weight: 500;
+}
+.editor-form.meta-collapsed .md-editor-wrapper { height: calc(100vh - 200px); }
+.editor-form.meta-collapsed .md-main { height: calc(100vh - 230px); }
 
 /* ========== Markdown 编辑器样式 ========== */
 .md-editor-wrapper {
