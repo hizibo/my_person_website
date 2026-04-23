@@ -234,25 +234,44 @@ import axios from 'axios'
 const API_BASE = '/api/note'
 const CATEGORY_API = '/api/note/category'
 
-// 自定义渲染器：实现代码高亮（marked v18+ 不再支持 setOptions.highlight）
-const renderer = new marked.Renderer()
-const originalCodeRenderer = renderer.code.bind(renderer)
-renderer.code = (code, language) => {
-  let highlighted
-  if (language && hljs.getLanguage(language)) {
-    highlighted = hljs.highlight(code, { language }).value
-  } else {
-    highlighted = hljs.highlightAuto(code).value
-  }
-  return `<pre><code class="hljs language-${language || ''}">${highlighted}</code></pre>`
-}
-
-// 配置 marked
+// ========== Bug 2 & 3 修复：marked v18 正确配置 ==========
+// marked v18+ 使用 Extensions 机制，不再支持 setOptions.highlight
+// 配置 marked：启用 GFM、换行、代码高亮
 marked.setOptions({
-  renderer,
   breaks: true,
   gfm: true
 })
+
+// 自定义渲染器：实现代码高亮和图片支持
+const renderer = new marked.Renderer()
+
+// 修复代码块渲染（marked v18+ 签名：code(code, language)）
+renderer.code = function(code, language) {
+  let highlighted
+  const lang = language || ''
+  
+  if (lang && hljs.getLanguage(lang)) {
+    try {
+      highlighted = hljs.highlight(code, { language: lang }).value
+    } catch (e) {
+      highlighted = hljs.highlightAuto(code).value
+    }
+  } else {
+    highlighted = hljs.highlightAuto(code).value
+  }
+  
+  return `<pre><code class="hljs language-${lang}">${highlighted}</code></pre>`
+}
+
+// 修复图片渲染：确保图片语法正确解析
+renderer.image = function(href, title, text) {
+  const titleAttr = title ? ` title="${title}"` : ''
+  const altAttr = text || ''
+  return `<img src="${href}" alt="${altAttr}"${titleAttr} style="max-width: 100%; border-radius: 6px;" />`
+}
+
+// 应用自定义渲染器
+marked.use({ renderer })
 
 // 判断内容是否为 HTML（兼容旧富文本数据）
 const isHtmlContent = (content) => {
@@ -265,7 +284,12 @@ const renderMarkdown = (content) => {
     // 旧数据，直接返回 HTML
     return content
   }
-  return marked.parse(content)
+  try {
+    return marked.parse(content)
+  } catch (e) {
+    console.error('Markdown 解析错误:', e)
+    return content
+  }
 }
 
 // 移动端分类面板
@@ -369,7 +393,7 @@ const insertMd = (type) => {
   if (!textarea) return
   const start = textarea.selectionStart
   const end = textarea.selectionEnd
-  const text = noteForm.content
+  const text = noteForm.content || ''
   const selected = text.substring(start, end)
   let insert = ''
   let cursorOffset = 0
@@ -444,11 +468,12 @@ const handleTabKey = (e) => {
   const textarea = mdTextareaRef.value
   if (!textarea) return
   const start = textarea.selectionStart
-  noteForm.content = noteForm.content.substring(0, start) + '  ' + noteForm.content.substring(start)
+  const content = noteForm.content || ''
+  noteForm.content = content.substring(0, start) + '  ' + content.substring(start)
   setTimeout(() => { textarea.setSelectionRange(start + 2, start + 2) }, 0)
 }
 
-// ========== 分类操作 ==========
+// ========== Bug 1 修复：分类操作 ==========
 const fetchCategories = async () => {
   try {
     const response = await axios.get(`${CATEGORY_API}/list`)
@@ -480,8 +505,20 @@ const saveCategory = async () => {
   if (!categoryForm.name.trim()) { ElMessage.warning('请输入分类名称'); return }
   savingCategory.value = true
   try {
+    // Bug 1 修复：确保 parentId 有默认值
+    const submitData = {
+      name: categoryForm.name.trim(),
+      parentId: categoryForm.parentId === null || categoryForm.parentId === undefined ? 0 : categoryForm.parentId,
+      sort: categoryForm.sort || 0
+    }
+    
+    // 如果是编辑，添加 id
+    if (editingCategory.value) {
+      submitData.id = editingCategory.value
+    }
+    
     const api = editingCategory.value ? `${CATEGORY_API}/update` : `${CATEGORY_API}/add`
-    const response = await axios[editingCategory.value ? 'put' : 'post'](api, categoryForm)
+    const response = await axios[editingCategory.value ? 'put' : 'post'](api, submitData)
     if (response.data && response.data.code === 200) {
       ElMessage.success(editingCategory.value ? '更新成功' : '添加成功')
       addCategoryDialogVisible.value = false
