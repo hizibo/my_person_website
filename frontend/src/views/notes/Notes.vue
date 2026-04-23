@@ -127,7 +127,15 @@
                 </el-form-item>
                 <el-form-item label="内容" required>
                   <!-- Markdown 编辑 + 预览区 -->
-                  <div class="md-editor-wrapper">
+                  <!-- 隐藏的图片上传 input -->
+                  <input
+                    ref="imageUploadRef"
+                    type="file"
+                    accept="image/*"
+                    style="display: none;"
+                    @change="handleImageUpload"
+                  />
+                  <div class="md-editor-wrapper" @drop="handleDrop" @dragover="handleDragOver">
                     <!-- 工具栏 -->
                     <div class="md-toolbar">
                       <span class="md-toolbar-label">撰写</span>
@@ -144,7 +152,7 @@
                         <el-tooltip content="有序列表" placement="bottom"><el-button size="small" @click="insertMd('ol')" :icon="List" /></el-tooltip>
                         <el-divider direction="vertical" />
                         <el-tooltip content="链接" placement="bottom"><el-button size="small" @click="insertMd('link')" :icon="Link" /></el-tooltip>
-                        <el-tooltip content="图片" placement="bottom"><el-button size="small" @click="insertMd('image')" :icon="Picture" /></el-tooltip>
+                        <el-tooltip content="图片" placement="bottom"><el-button size="small" @click="insertMd('image')" :icon="Picture" :loading="imageUploading" /></el-tooltip>
                         <el-tooltip content="分割线" placement="bottom"><el-button size="small" @click="insertMd('hr')" :icon="Minus" /></el-tooltip>
                         <el-tooltip content="表格" placement="bottom"><el-button size="small" @click="insertMd('table')" :icon="Grid" /></el-tooltip>
                       </div>
@@ -157,8 +165,9 @@
                         ref="mdTextareaRef"
                         v-model="noteForm.content"
                         class="md-textarea"
-                        placeholder="请输入 Markdown 内容，支持 GFM 语法..."
+                        placeholder="请输入 Markdown 内容，支持 GFM 语法...（支持拖拽/粘贴图片上传）"
                         @keydown.tab.prevent="handleTabKey"
+                        @paste="handlePaste"
                       ></textarea>
                       <div class="md-preview markdown-body" v-html="renderedContent"></div>
                     </div>
@@ -224,7 +233,7 @@ import {
   Plus, Edit, Delete, Search, InfoFilled, Expand, Fold,
   ArrowDown, ArrowRight, ArrowLeft, Finished, WarnTriangleFilled,
   CircleCloseFilled, Menu, ChatLineSquare, List as ListIcon, Link,
-  Picture, Minus, Grid
+  Picture, Minus, Grid, UploadFilled
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { marked } from 'marked'
@@ -440,8 +449,8 @@ const insertMd = (type) => {
       cursorOffset = insert.length - 1
       break
     case 'image':
-      insert = `![${selected || '图片描述'}](image-url)`
-      cursorOffset = insert.length - 1
+      // 触发图片上传
+      triggerImageUpload()
       break
     case 'hr':
       insert = `\n---\n`
@@ -471,6 +480,113 @@ const handleTabKey = (e) => {
   const content = noteForm.content || ''
   noteForm.content = content.substring(0, start) + '  ' + content.substring(start)
   setTimeout(() => { textarea.setSelectionRange(start + 2, start + 2) }, 0)
+}
+
+// ========== 图片上传功能 ==========
+const imageUploadRef = ref(null)
+const imageUploading = ref(false)
+
+const triggerImageUpload = () => {
+  if (imageUploadRef.value) {
+    imageUploadRef.value.click()
+  }
+}
+
+const handleImageUpload = async (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+
+  // 验证文件类型
+  if (!file.type.startsWith('image/')) {
+    ElMessage.error('请选择图片文件')
+    return
+  }
+
+  // 验证文件大小（最大 10MB）
+  if (file.size > 10 * 1024 * 1024) {
+    ElMessage.error('图片大小不能超过 10MB')
+    return
+  }
+
+  imageUploading.value = true
+
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await axios.post('/api/upload/image', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+
+    if (response.data && response.data.code === 200) {
+      const imageUrl = response.data.data.url
+      // 在光标位置插入图片 Markdown 语法
+      const textarea = mdTextareaRef.value
+      if (textarea) {
+        const start = textarea.selectionStart
+        const end = textarea.selectionEnd
+        const text = noteForm.content || ''
+        const imageMd = `![${file.name}](${imageUrl})`
+        noteForm.content = text.substring(0, start) + imageMd + text.substring(end)
+        
+        // 移动光标到插入内容之后
+        setTimeout(() => {
+          textarea.focus()
+          textarea.setSelectionRange(start + imageMd.length, start + imageMd.length)
+        }, 0)
+      }
+      ElMessage.success('图片上传成功')
+    } else {
+      ElMessage.error(response.data.msg || '上传失败')
+    }
+  } catch (error) {
+    console.error('图片上传失败:', error)
+    ElMessage.error('图片上传失败')
+  } finally {
+    imageUploading.value = false
+    // 清空 input，允许重复上传同一文件
+    event.target.value = ''
+  }
+}
+
+// 拖拽上传支持
+const handleDrop = async (event) => {
+  event.preventDefault()
+  const files = event.dataTransfer.files
+  if (files.length === 0) return
+
+  const file = files[0]
+  if (!file.type.startsWith('image/')) {
+    return
+  }
+
+  // 复用 handleImageUpload 逻辑
+  const fakeEvent = { target: { files: [file], value: '' } }
+  await handleImageUpload(fakeEvent)
+}
+
+const handleDragOver = (event) => {
+  event.preventDefault()
+}
+
+// 粘贴上传支持
+const handlePaste = async (event) => {
+  const items = event.clipboardData.items
+  if (!items) return
+
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i]
+    if (item.kind === 'file' && item.type.startsWith('image/')) {
+      const file = item.getAsFile()
+      if (file) {
+        const fakeEvent = { target: { files: [file], value: '' } }
+        await handleImageUpload(fakeEvent)
+      }
+      break
+    }
+  }
 }
 
 // ========== Bug 1 修复：分类操作 ==========

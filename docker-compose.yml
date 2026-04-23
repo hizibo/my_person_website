@@ -36,6 +36,8 @@ services:
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
       JAVA_OPTS: "-Xmx256m -Xms128m"
+    volumes:
+      - uploads_data:/uploads
     depends_on:
       mysql:
         condition: service_healthy
@@ -59,6 +61,11 @@ services:
     restart: unless-stopped
     ports:
       - "80:80"
+    volumes:
+      - uploads_data:/uploads:ro
+    depends_on:
+      - backend
 
 volumes:
   mysql_data:
+  uploads_data:
