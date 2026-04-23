@@ -1,7 +1,6 @@
 package com.toolbox.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.toolkit.sql.SqlHelper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.toolbox.entity.Note;
 import com.toolbox.entity.NoteCategory;
@@ -10,10 +9,7 @@ import com.toolbox.mapper.NoteMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 public class NoteCategoryService extends ServiceImpl<NoteCategoryMapper, NoteCategory> {
@@ -60,28 +56,13 @@ public class NoteCategoryService extends ServiceImpl<NoteCategoryMapper, NoteCat
     private void populateNoteCount(List<NoteCategory> categories) {
         if (categories == null || categories.isEmpty()) return;
 
-        List<Long> allIds = categories.stream()
-                .map(NoteCategory::getId)
-                .collect(Collectors.toList());
-
-        // 一次性查询所有分类的笔记数量
-        List<Map<String, Object>> countResults = noteMapper.selectMaps(
-                new LambdaQueryWrapper<Note>()
-                        .select(Note::getCategoryId)
-                        .in(Note::getCategoryId, allIds)
-                        .groupBy(Note::getCategoryId)
-        );
-
-        // 转换为 categoryId -> 数量 的映射
-        Map<Long, Long> countMap = new HashMap<>();
-        for (Map<String, Object> row : countResults) {
-            Long categoryId = ((Number) row.get("category_id")).longValue();
-            Long count = ((Number) row.get("cnt")).longValue();
-            countMap.put(categoryId, count);
-        }
-
+        // 为每个分类查询笔记数量
         for (NoteCategory cat : categories) {
-            cat.setNoteCount(countMap.getOrDefault(cat.getId(), 0L).intValue());
+            Long count = noteMapper.selectCount(
+                    new LambdaQueryWrapper<Note>()
+                            .eq(Note::getCategoryId, cat.getId())
+            );
+            cat.setNoteCount(count.intValue());
         }
     }
 
