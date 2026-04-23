@@ -65,7 +65,7 @@ public class NoteCategoryService extends ServiceImpl<NoteCategoryMapper, NoteCat
         // 一次性查询所有分类的笔记数量
         List<Map<String, Object>> countResults = noteMapper.selectMaps(
                 new LambdaQueryWrapper<Note>()
-                        .select(com.baomidou.mybatisplus.core.toolkit.Constants.COUNT, "categoryId")
+                        .select("COUNT(*)", "categoryId")
                         .in(Note::getCategoryId, allIds)
                         .groupBy(Note::getCategoryId)
         );
