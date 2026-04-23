@@ -133,30 +133,21 @@
                     <el-form-item label="摘要">
                       <el-input v-model="noteForm.summary" type="textarea" :autosize="{ minRows: 2 }" placeholder="请输入摘要" />
                     </el-form-item>
-                  </el-form>
-                </div>
-              </el-collapse-transition>
-              <!-- 聚焦提示 -->
-              <div v-if="!metaCollapsed" class="focus-hint">
-                <el-icon><InfoFilled /></el-icon> 收起详情可专注编辑内容
-              </div>
-              <!-- 内容区标题 -->
-              <div class="content-label">内容</div>
-              <el-form-item label="内容" required class="content-item">
-                  <!-- Markdown 编辑 + 预览区 -->
-                  <!-- 隐藏的图片上传 input -->
-                  <input
-                    ref="imageUploadRef"
-                    type="file"
-                    accept="image/*"
-                    style="display: none;"
-                    @change="handleImageUpload"
-                  />
-                  <div class="md-editor-wrapper" @drop="handleDrop" @dragover="handleDragOver">
-                    <!-- 工具栏 -->
-                    <div class="md-toolbar">
-                      <span class="md-toolbar-label">撰写</span>
-                      <div class="md-toolbar-buttons">
+                    <el-form-item label="内容" required class="content-item">
+                      <!-- Markdown 编辑 + 预览区 -->
+                      <!-- 隐藏的图片上传 input -->
+                      <input
+                        ref="imageUploadRef"
+                        type="file"
+                        accept="image/*"
+                        style="display: none;"
+                        @change="handleImageUpload"
+                      />
+                      <div class="md-editor-wrapper" @drop="handleDrop" @dragover="handleDragOver">
+                        <!-- 工具栏 -->
+                        <div class="md-toolbar">
+                          <span class="md-toolbar-label">撰写</span>
+                          <div class="md-toolbar-buttons">
                         <el-tooltip content="标题" placement="bottom"><el-button size="small" @click="insertMd('heading')" :icon="Finished" /></el-tooltip>
                         <el-tooltip content="加粗" placement="bottom"><el-button size="small" @click="insertMd('bold')" :icon="WarnTriangleFilled" /></el-tooltip>
                         <el-tooltip content="斜体" placement="bottom"><el-button size="small" @click="insertMd('italic')" :icon="CircleCloseFilled" /></el-tooltip>
@@ -190,7 +181,13 @@
                     </div>
                   </div>
                 </el-form-item>
-              </el-form>
+                  </el-form>
+                </div>
+              </el-collapse-transition>
+              <!-- 聚焦提示 -->
+              <div v-if="!metaCollapsed" class="focus-hint">
+                <el-icon><InfoFilled /></el-icon> 收起详情可专注编辑内容
+              </div>
             </div>
           </div>
         </div>
