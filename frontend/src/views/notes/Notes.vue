@@ -1112,17 +1112,27 @@ onMounted(() => { fetchCategories() })
 
 /* ========== 查看对话框样式（全屏） ========== */
 .view-dialog :deep(.el-dialog__header) { padding: 16px 20px; border-bottom: 1px solid #e4e7ed; margin-right: 0; }
-.view-dialog :deep(.el-dialog__body) { padding: 20px 32px; height: calc(100vh - 80px); overflow-y: auto; }
+.view-dialog :deep(.el-dialog__body) { 
+  padding: 24px 48px; 
+  height: calc(100vh - 80px); 
+  overflow-y: auto; 
+}
 .view-dialog :deep(.el-dialog__close) { font-size: 20px; }
 .view-dialog-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
 .view-dialog-title { font-size: 20px; font-weight: 600; color: #1f2328; margin: 0; }
 .view-dialog-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .view-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .view-date { font-size: 13px; color: #8b949e; margin-left: 8px; }
-.view-content { }
-.view-summary { background: #f6f8fa; border-radius: 6px; padding: 12px 16px; font-size: 14px; color: #57606a; line-height: 1.6; margin-bottom: 20px; }
+.view-content { 
+  max-width: 900px; 
+  margin: 0 auto; 
+}
+.view-summary { background: #f6f8fa; border-radius: 6px; padding: 16px 20px; font-size: 14px; color: #57606a; line-height: 1.6; margin-bottom: 24px; }
 .view-summary p { margin: 0; }
-.view-body { line-height: 1.8; }
+.view-body { 
+  line-height: 1.8; 
+  font-size: 15px;
+}
 
 /* ========== 响应式：平板 ========== */
 @media screen and (max-width: 1024px) {
