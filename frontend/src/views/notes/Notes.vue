@@ -302,9 +302,18 @@ renderer.image = function(token) {
 // 应用自定义渲染器 + 同步模式（marked v18 parse 默认异步，需显式关闭）
 marked.use({ renderer, async: false })
 
-// 判断内容是否为 HTML（兼容旧富文本数据）
+// 判断内容是否为纯 HTML（兼容旧富文本数据）
+// 注意：代码块中包含 HTML 标签的 Markdown 不是 HTML 内容！
+// 先去除代码块和行内代码，再检测是否含有 HTML 标签
 const isHtmlContent = (content) => {
-  return content && typeof content === 'string' && /<[^>]+>/i.test(content)
+  if (!content || typeof content !== 'string') return false
+  // 去除代码块 (```...```) 和行内代码 (`...`)
+  const stripped = content
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/`[^`]*`/g, '')
+  // 检查剩余内容是否包含 HTML 标签（排除 Markdown 语法残留）
+  return /<\/(?!\/)([a-zA-Z][a-zA-Z0-9]*)\s*>/.test(stripped) &&
+         !/^\s*[-*+>\[|#`]/m.test(content)
 }
 
 const renderMarkdown = (content) => {
