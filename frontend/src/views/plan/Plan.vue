@@ -18,43 +18,54 @@
     </div>
 
     <!-- 添加计划 / 搜索 -->
-    <div class="add-form">
-      <el-input v-model="newPlan.title" placeholder="计划标题 / 搜索关键词" class="input-title" clearable />
-      <el-input v-model="newPlan.description" placeholder="计划描述" class="input-desc" clearable />
-      <el-input-number v-model="newPlan.sort" :min="1" :step="1" placeholder="排序" style="width: 120px" />
-      <el-button type="primary" @click="addPlan" :icon="Plus" :loading="adding">添加</el-button>
-      <el-button @click="searchPlans" :icon="Search" :loading="searching">搜索</el-button>
+    <div class="add-form-card">
+      <el-input v-model="newPlan.title" placeholder="计划标题" class="input-title" clearable>
+        <template #prefix>
+          <el-icon><Edit /></el-icon>
+        </template>
+      </el-input>
+      <el-input v-model="newPlan.description" placeholder="计划描述（可选）" class="input-desc" clearable />
+      <el-input-number v-model="newPlan.sort" :min="1" :step="1" placeholder="排序" controls-position="right" style="width: 100px" />
+      <div class="form-actions">
+        <el-button type="primary" @click="addPlan" :icon="Plus" :loading="adding">添加</el-button>
+        <el-button @click="searchPlans" :icon="Search" :loading="searching">搜索</el-button>
+      </div>
     </div>
 
     <!-- 计划列表 -->
     <div class="plan-list">
       <div class="table-wrapper">
-        <el-table :data="plans" style="width: 100%" border v-loading="loading" size="small" @row-dblclick="viewPlan">
-          <el-table-column prop="sort" label="排序" width="80">
+        <el-table :data="plans" style="width: 100%" border v-loading="loading" size="small" @row-dblclick="viewPlan" :row-class-name="planRowClass">
+          <el-table-column prop="sort" label="排序" width="70" align="center" />
+          <el-table-column prop="title" label="标题" min-width="140">
             <template #default="{ row }">
-              {{ row.sort }}
+              <span class="plan-title-cell">{{ row.title }}</span>
             </template>
           </el-table-column>
-          <el-table-column prop="title" label="标题" min-width="120" />
-          <el-table-column prop="description" label="描述" min-width="150" show-overflow-tooltip />
+          <el-table-column prop="description" label="描述" min-width="160" show-overflow-tooltip />
           <el-table-column label="进度" width="200">
             <template #default="{ row }">
               <div class="progress-cell">
-                <el-progress :percentage="row.progress" :stroke-width="8" :show-text="false" class="progress-bar" />
-                <span class="progress-text">{{ row.progress }}%</span>
-                <el-button size="small" @click="editProgress(row)" :icon="Edit" class="progress-btn">改</el-button>
+                <el-progress
+                  :percentage="row.progress"
+                  :stroke-width="8"
+                  :show-text="false"
+                  :color="progressColor(row.progress)"
+                />
+                <span class="progress-text" :style="{ color: progressColor(row.progress) }">{{ row.progress }}%</span>
+                <el-button size="small" link type="primary" @click="editProgress(row)" class="progress-btn">改</el-button>
               </div>
             </template>
           </el-table-column>
           <el-table-column prop="updateTime" label="更新时间" width="150">
             <template #default="{ row }">
-              {{ formatDate(row.updateTime) }}
+              <span class="date-text">{{ formatDate(row.updateTime) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="120" fixed="right">
+          <el-table-column label="操作" width="120" fixed="right" align="center">
             <template #default="{ row }">
-              <el-button size="small" @click="editPlan(row)" :icon="Edit">编辑</el-button>
-              <el-button size="small" type="danger" @click="deletePlan(row.id)" :icon="Delete">删</el-button>
+              <el-button size="small" link type="primary" @click="editPlan(row)" :icon="Edit">编辑</el-button>
+              <el-button size="small" link type="danger" @click="deletePlan(row.id)" :icon="Delete">删除</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -166,6 +177,18 @@ const formatDate = (dateStr) => {
 const formatDescription = (desc) => {
   if (!desc) return '<span style="color:#999">暂无描述</span>'
   return desc.replace(/\n/g, '<br>')
+}
+
+const progressColor = (percentage) => {
+  if (percentage >= 100) return '#67c23a'
+  if (percentage >= 60) return '#409eff'
+  if (percentage >= 30) return '#e6a23c'
+  return '#f56c6c'
+}
+
+const planRowClass = ({ row }) => {
+  if (row.progress >= 100) return 'row-completed'
+  return ''
 }
 
 const fetchPlans = async () => {
@@ -282,7 +305,7 @@ onMounted(() => { fetchPlans() })
 .page-title {
   font-size: 18px;
   font-weight: 600;
-  color: #333;
+  color: #303133;
 }
 
 .info-icon {
@@ -304,21 +327,32 @@ onMounted(() => { fetchPlans() })
   margin: 4px 0;
 }
 
-.add-form {
+.add-form-card {
   margin: 16px 0;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
+  padding: 14px 16px;
+  background: #fff;
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
 .input-title {
-  width: 180px !important;
+  width: 200px !important;
 }
 
 .input-desc {
   flex: 1;
-  min-width: 150px;
+  min-width: 160px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .plan-list {
@@ -327,12 +361,18 @@ onMounted(() => { fetchPlans() })
 
 .table-wrapper {
   overflow-x: auto;
+  border-radius: 8px;
+}
+
+.plan-title-cell {
+  font-weight: 500;
+  color: #303133;
 }
 
 .progress-cell {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .progress-bar {
@@ -342,7 +382,8 @@ onMounted(() => { fetchPlans() })
 
 .progress-text {
   font-size: 12px;
-  min-width: 32px;
+  font-weight: 600;
+  min-width: 36px;
   text-align: right;
 }
 
@@ -350,8 +391,27 @@ onMounted(() => { fetchPlans() })
   flex-shrink: 0;
 }
 
+.date-text {
+  font-size: 12px;
+  color: #909399;
+}
+
 :deep(.el-table__body-wrapper .el-table__row) {
   cursor: pointer;
+  transition: background 0.2s;
+}
+
+:deep(.el-table__body-wrapper .el-table__row:hover) {
+  background-color: #f5f7fa;
+}
+
+:deep(.row-completed) {
+  opacity: 0.7;
+}
+
+:deep(.row-completed .plan-title-cell) {
+  text-decoration: line-through;
+  color: #909399;
 }
 
 /* ========== 查看对话框样式 ========== */

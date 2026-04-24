@@ -116,82 +116,78 @@
                 <el-button type="primary" size="small" @click="saveNote" :loading="savingNote">保存</el-button>
               </div>
             </div>
-            <div class="editor-form">
-              <!-- 标题始终可见 -->
-              <el-form :model="noteForm" label-width="70px" size="small">
-                <el-form-item label="标题" required>
-                  <el-input v-model="noteForm.title" placeholder="请输入笔记标题" />
-                </el-form-item>
-              </el-form>
-              <!-- 元信息折叠区：分类、标签、摘要 -->
-              <el-collapse-transition>
-                <div v-show="!metaCollapsed" class="meta-section">
-                  <el-form :model="noteForm" label-width="70px" size="small">
-                    <el-form-item label="分类">
-                      <el-select v-model="noteForm.categoryId" placeholder="选择分类" style="width: 100%;">
-                        <el-option v-for="cat in flatCategories" :key="cat.id" :label="cat.name" :value="cat.id" />
-                      </el-select>
-                    </el-form-item>
-                    <el-form-item label="标签">
-                      <el-input v-model="noteForm.tags" placeholder="多个标签用逗号分隔" />
-                    </el-form-item>
-                    <el-form-item label="摘要">
-                      <el-input v-model="noteForm.summary" type="textarea" :autosize="{ minRows: 2 }" placeholder="请输入摘要" />
-                    </el-form-item>
-                  </el-form>
-                </div>
-              </el-collapse-transition>
-              <!-- 内容区始终可见 -->
-              <el-form :model="noteForm" label-width="70px" size="small">
-                <el-form-item label="内容" required>
-                      <!-- Markdown 编辑 + 预览区 -->
-                      <!-- 隐藏的图片上传 input -->
-                      <input
-                        ref="imageUploadRef"
-                        type="file"
-                        accept="image/*"
-                        style="display: none;"
-                        @change="handleImageUpload"
-                      />
-                      <div class="md-editor-wrapper" @drop="handleDrop" @dragover="handleDragOver">
-                        <!-- 工具栏 -->
-                        <div class="md-toolbar">
-                          <span class="md-toolbar-label">撰写</span>
-                          <div class="md-toolbar-buttons">
-                        <el-tooltip content="标题" placement="bottom"><el-button size="small" @click="insertMd('heading')" :icon="Finished" /></el-tooltip>
-                        <el-tooltip content="加粗" placement="bottom"><el-button size="small" @click="insertMd('bold')" :icon="WarnTriangleFilled" /></el-tooltip>
-                        <el-tooltip content="斜体" placement="bottom"><el-button size="small" @click="insertMd('italic')" :icon="CircleCloseFilled" /></el-tooltip>
-                        <el-tooltip content="删除线" placement="bottom"><el-button size="small" @click="insertMd('strike')">~~</el-button></el-tooltip>
-                        <el-divider direction="vertical" />
-                        <el-tooltip content="行内代码" placement="bottom"><el-button size="small" @click="insertMd('code')">`</el-button></el-tooltip>
-                        <el-tooltip content="代码块" placement="bottom"><el-button size="small" @click="insertMd('codeblock')" :icon="Menu" /></el-tooltip>
-                        <el-tooltip content="引用" placement="bottom"><el-button size="small" @click="insertMd('quote')" :icon="ChatLineSquare" /></el-tooltip>
-                        <el-tooltip content="无序列表" placement="bottom"><el-button size="small" @click="insertMd('ul')" :icon="List" /></el-tooltip>
-                        <el-tooltip content="有序列表" placement="bottom"><el-button size="small" @click="insertMd('ol')" :icon="List" /></el-tooltip>
-                        <el-divider direction="vertical" />
-                        <el-tooltip content="链接" placement="bottom"><el-button size="small" @click="insertMd('link')" :icon="Link" /></el-tooltip>
-                        <el-tooltip content="图片" placement="bottom"><el-button size="small" @click="insertMd('image')" :icon="Picture" :loading="imageUploading" /></el-tooltip>
-                        <el-tooltip content="分割线" placement="bottom"><el-button size="small" @click="insertMd('hr')" :icon="Minus" /></el-tooltip>
-                        <el-tooltip content="表格" placement="bottom"><el-button size="small" @click="insertMd('table')" :icon="Grid" /></el-tooltip>
-                      </div>
-                      <el-divider class="toolbar-divider" direction="vertical" />
-                      <span class="md-toolbar-label preview-label">预览</span>
-                    </div>
-                    <!-- 编辑+预览区域 -->
-                    <div class="md-main">
-                      <textarea
-                        ref="mdTextareaRef"
-                        v-model="noteForm.content"
-                        class="md-textarea"
-                        placeholder="请输入 Markdown 内容，支持 GFM 语法...（支持拖拽/粘贴图片上传）"
-                        @keydown.tab.prevent="handleTabKey"
-                        @paste="handlePaste"
-                      ></textarea>
-                      <div class="md-preview markdown-body" v-html="renderedContent"></div>
-                    </div>
+            <!-- 标题始终可见 -->
+            <el-form :model="noteForm" label-width="70px" size="small" class="editor-title-form">
+              <el-form-item label="标题" required>
+                <el-input v-model="noteForm.title" placeholder="请输入笔记标题" />
+              </el-form-item>
+            </el-form>
+            <!-- 元信息折叠区：分类、标签、摘要 -->
+            <el-collapse-transition>
+              <div v-show="!metaCollapsed" class="meta-section">
+                <el-form :model="noteForm" label-width="70px" size="small">
+                  <el-form-item label="分类">
+                    <el-select v-model="noteForm.categoryId" placeholder="选择分类" style="width: 100%;">
+                      <el-option v-for="cat in flatCategories" :key="cat.id" :label="cat.name" :value="cat.id" />
+                    </el-select>
+                  </el-form-item>
+                  <el-form-item label="标签">
+                    <el-input v-model="noteForm.tags" placeholder="多个标签用逗号分隔" />
+                  </el-form-item>
+                  <el-form-item label="摘要">
+                    <el-input v-model="noteForm.summary" type="textarea" :autosize="{ minRows: 2 }" placeholder="请输入摘要" />
+                  </el-form-item>
+                </el-form>
+              </div>
+            </el-collapse-transition>
+            <!-- 内容区 - 自动撑满剩余高度 -->
+            <div class="editor-content-area">
+              <!-- Markdown 编辑 + 预览区 -->
+              <!-- 隐藏的图片上传 input -->
+              <input
+                ref="imageUploadRef"
+                type="file"
+                accept="image/*"
+                style="display: none;"
+                @change="handleImageUpload"
+              />
+              <div class="md-editor-wrapper" @drop="handleDrop" @dragover="handleDragOver">
+                <!-- 工具栏 -->
+                <div class="md-toolbar">
+                  <span class="md-toolbar-label">撰写</span>
+                  <div class="md-toolbar-buttons">
+                    <el-tooltip content="标题" placement="bottom"><el-button size="small" @click="insertMd('heading')" :icon="Finished" /></el-tooltip>
+                    <el-tooltip content="加粗" placement="bottom"><el-button size="small" @click="insertMd('bold')" :icon="WarnTriangleFilled" /></el-tooltip>
+                    <el-tooltip content="斜体" placement="bottom"><el-button size="small" @click="insertMd('italic')" :icon="CircleCloseFilled" /></el-tooltip>
+                    <el-tooltip content="删除线" placement="bottom"><el-button size="small" @click="insertMd('strike')">~~</el-button></el-tooltip>
+                    <el-divider direction="vertical" />
+                    <el-tooltip content="行内代码" placement="bottom"><el-button size="small" @click="insertMd('code')">`</el-button></el-tooltip>
+                    <el-tooltip content="代码块" placement="bottom"><el-button size="small" @click="insertMd('codeblock')" :icon="Menu" /></el-tooltip>
+                    <el-tooltip content="引用" placement="bottom"><el-button size="small" @click="insertMd('quote')" :icon="ChatLineSquare" /></el-tooltip>
+                    <el-tooltip content="无序列表" placement="bottom"><el-button size="small" @click="insertMd('ul')" :icon="List" /></el-tooltip>
+                    <el-tooltip content="有序列表" placement="bottom"><el-button size="small" @click="insertMd('ol')" :icon="List" /></el-tooltip>
+                    <el-divider direction="vertical" />
+                    <el-tooltip content="链接" placement="bottom"><el-button size="small" @click="insertMd('link')" :icon="Link" /></el-tooltip>
+                    <el-tooltip content="图片" placement="bottom"><el-button size="small" @click="insertMd('image')" :icon="Picture" :loading="imageUploading" /></el-tooltip>
+                    <el-tooltip content="分割线" placement="bottom"><el-button size="small" @click="insertMd('hr')" :icon="Minus" /></el-tooltip>
+                    <el-tooltip content="表格" placement="bottom"><el-button size="small" @click="insertMd('table')" :icon="Grid" /></el-tooltip>
                   </div>
-                </el-form-item>
-              </el-form>
+                  <el-divider class="toolbar-divider" direction="vertical" />
+                  <span class="md-toolbar-label preview-label">预览</span>
+                </div>
+                <!-- 编辑+预览区域 -->
+                <div class="md-main">
+                  <textarea
+                    ref="mdTextareaRef"
+                    v-model="noteForm.content"
+                    class="md-textarea"
+                    placeholder="请输入 Markdown 内容，支持 GFM 语法...（支持拖拽/粘贴图片上传）"
+                    @keydown.tab.prevent="handleTabKey"
+                    @paste="handlePaste"
+                  ></textarea>
+                  <div class="md-preview markdown-body" v-html="renderedContent"></div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -883,7 +879,7 @@ onMounted(() => { fetchCategories() })
 
 /* 笔记列 */
 .notes-col { flex: 1; min-width: 0; }
-.notes-panel { border: 1px solid #e4e7ed; border-radius: 8px; padding: 16px; background: #fff; min-height: 400px; }
+.notes-panel { border: 1px solid #e4e7ed; border-radius: 8px; padding: 16px; background: #fff; min-height: 400px; display: flex; flex-direction: column; height: calc(100vh - 120px); overflow: hidden; }
 .notes-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
 .notes-header-title { font-weight: bold; font-size: 14px; }
 .header-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
@@ -891,25 +887,45 @@ onMounted(() => { fetchCategories() })
 :deep(.el-table__body-wrapper .el-table__row) { cursor: pointer; }
 
 /* 编辑器头部 */
-.editor-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #e4e7ed; padding-bottom: 10px; }
+.editor-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #ebeef5; padding-bottom: 10px; flex-shrink: 0; }
 .editor-header-left { display: flex; align-items: center; gap: 8px; }
 .editor-title { font-weight: bold; font-size: 15px; color: #303133; }
 .toggle-meta-btn { font-size: 12px; color: #909399 !important; padding: 4px 8px !important; }
 .toggle-meta-btn:hover { color: #409eff !important; }
 .editor-actions { display: flex; gap: 8px; }
-.editor-form { padding: 0 16px 16px; }
-.editor-form .el-form-item { margin-bottom: 12px; }
-.editor-form .el-form-item__label { line-height: 32px; color: #606266; }
-.meta-section { padding-bottom: 8px; border-bottom: 1px dashed #ebeef5; margin-bottom: 4px; }
+.editor-title-form { flex-shrink: 0; padding: 0; }
+.editor-title-form .el-form-item { margin-bottom: 8px; }
+.meta-section { padding: 0 0 8px; border-bottom: 1px dashed #ebeef5; margin-bottom: 8px; flex-shrink: 0; }
+.meta-section .el-form-item { margin-bottom: 8px; }
+
+/* 内容区 - 自动撑满剩余高度 */
+.editor-content-area {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.editor-content-area .md-editor-wrapper {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.editor-content-area .md-main {
+  flex: 1;
+  min-height: 0;
+  height: auto !important;
+}
 
 /* ========== Markdown 编辑器样式 ========== */
 .md-editor-wrapper {
   border: 1px solid #e4e7ed;
-  border-radius: 6px;
+  border-radius: 8px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   width: 100%;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
 .md-toolbar {
@@ -917,9 +933,10 @@ onMounted(() => { fetchCategories() })
   align-items: center;
   gap: 6px;
   padding: 6px 10px;
-  background: #fafafa;
+  background: #f8f9fb;
   border-bottom: 1px solid #e4e7ed;
   flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 .md-toolbar-label {
@@ -947,6 +964,8 @@ onMounted(() => { fetchCategories() })
 
 .md-main {
   display: flex;
+  flex: 1;
+  min-height: 0;
   height: 420px;
 }
 
@@ -1109,7 +1128,7 @@ onMounted(() => { fetchCategories() })
 @media screen and (max-width: 1024px) {
   .notes-page { padding: 12px; }
   .category-panel { max-height: calc(100vh - 100px); }
-  .md-main { height: 360px; }
+  .notes-panel { height: auto; min-height: calc(100vh - 120px); }
 }
 
 /* ========== 响应式：手机 ========== */

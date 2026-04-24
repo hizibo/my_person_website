@@ -171,10 +171,11 @@ const handleLogout = () => {
 /* ========== 侧边栏 ========== */
 .sidebar {
   width: 240px;
-  background-color: #2c3e50;
+  background: linear-gradient(180deg, #1e2a3a 0%, #2c3e50 100%);
   color: white;
   flex-shrink: 0;
   transition: transform 0.3s ease;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
 }
 
 .sidebar-inner {
@@ -219,6 +220,7 @@ const handleLogout = () => {
 .nav-item.router-link-active {
   background-color: #3498db;
   color: white;
+  box-shadow: 0 2px 6px rgba(52, 152, 219, 0.3);
 }
 
 .nav-icon {
@@ -263,8 +265,8 @@ const handleLogout = () => {
   overflow-y: auto;
   overflow-x: hidden;
   background-color: #f5f7fa;
-  /* 移动端顶部留出状态栏空间 */
   padding-top: 0;
+  min-width: 0;
 }
 
 /* ========== 响应式：平板 ========== */

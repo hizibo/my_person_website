@@ -448,7 +448,13 @@ onMounted(() => {
 .search-bar {
   display: flex;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: #fff;
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  gap: 12px;
 }
 
 .url-cell, .account-cell, .password-cell {
@@ -492,6 +498,11 @@ onMounted(() => {
 
 :deep(.el-table__body-wrapper .el-table__row) {
   cursor: pointer;
+  transition: background 0.2s;
+}
+
+:deep(.el-table__body-wrapper .el-table__row:hover) {
+  background-color: #f5f7fa;
 }
 
 /* ========== 查看对话框样式 ========== */
