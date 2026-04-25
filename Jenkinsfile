@@ -13,6 +13,8 @@ pipeline {
                     credentialsId: 'github-ssh',
                     branch: 'main'
                 )
+                // 清理workspace中的未跟踪文件，防止残留旧代码导致构建失败
+                sh 'git clean -fdx'
             }
         }
         
