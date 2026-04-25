@@ -31,7 +31,4 @@ mybatis-plus:
     db-config:
       id-type: auto
 
-# Python 服务配置
-python:
-  xmind:
-    url: http://localhost:8001/parse-xmind
+

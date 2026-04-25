@@ -175,26 +175,23 @@ const parseXmind = async () => {
     const formData = new FormData()
     formData.append('file', fileData.value.raw)
 
-    const res = await axios.post('/api/tool/xmind/parse', formData, {
+    const res = await axios.post('/api/tool/xmind/parse-xmind', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
 
-    if (res.data.code === 200) {
-      const data = res.data.data
-      testCases.value = data.cases || []
-      recognizedCount.value = data.recognizedCount || 0
-      convertedCount.value = data.convertedCount || 0
-      parseDone.value = true
-      mindmapData.value = data.mindmap
-      buildTreeData(mindmapData.value)
+    // Python 直接返回，不包裹在 Result 中
+    const data = res.data
+    testCases.value = data.cases || []
+    recognizedCount.value = data.recognizedCount || 0
+    convertedCount.value = data.convertedCount || 0
+    parseDone.value = true
+    mindmapData.value = data.mindmap
+    buildTreeData(mindmapData.value)
 
-      if (convertedCount.value > 0) {
-        ElMessage.success(`转换完成：识别 ${recognizedCount.value} 条，成功转换 ${convertedCount.value} 条`)
-      } else {
-        ElMessage.warning(`识别 ${recognizedCount.value} 条，但无合法用例（请检查层级是否满足：模块→预置条件→步骤→预期结果）`)
-      }
+    if (convertedCount.value > 0) {
+      ElMessage.success(`转换完成：识别 ${recognizedCount.value} 条，成功转换 ${convertedCount.value} 条`)
     } else {
-      ElMessage.error(res.data.message || '转换失败')
+      ElMessage.warning(`识别 ${recognizedCount.value} 条，但无合法用例（请检查层级是否满足：模块→预置条件→步骤→预期结果）`)
     }
   } catch (e) {
     console.error(e)
