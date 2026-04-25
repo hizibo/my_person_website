@@ -16,27 +16,65 @@ pipeline {
             }
         }
         
+        stage('Detect Changes') {
+            steps {
+                script {
+                    // 获取与上次构建的差异
+                    def changes = sh(script: 'git diff --name-only HEAD~1 HEAD 2>/dev/null || git diff --name-only HEAD', returnStdout: true).trim()
+                    
+                    echo "Changed files:\n${changes}"
+                    
+                    // 检测各服务是否有改动
+                    env.NEED_BACKEND = changes.contains('backend/') ? 'true' : 'false'
+                    env.NEED_FRONTEND = changes.contains('frontend/') ? 'true' : 'false'
+                    env.NEED_XMIND = changes.contains('python-services/') ? 'true' : 'false'
+                    
+                    echo "Need rebuild - backend: ${env.NEED_BACKEND}, frontend: ${env.NEED_FRONTEND}, xmind: ${env.NEED_XMIND}"
+                    
+                    // 如果没有任何服务改动，跳过构建
+                    if (env.NEED_BACKEND == 'false' && env.NEED_FRONTEND == 'false' && env.NEED_XMIND == 'false') {
+                        env.SKIP_BUILD = 'true'
+                        echo "No service changes detected, skipping build."
+                    }
+                }
+            }
+        }
+        
         stage('Build and Deploy') {
+            when { 
+                expression { env.SKIP_BUILD != 'true' } 
+            }
             steps {
                 sh '''
-                    # ① 只停止非 MySQL 服务（容器保留，数据卷不丢失）
-                    docker-compose stop backend frontend xmind-service || true
-                    # ② 增量构建 + 启动非 MySQL 服务（--build 只重建有改动的镜像）
-                    docker-compose up -d --build backend frontend xmind-service
-                    # ③ 等待后端就绪
-                    for i in $(seq 1 30); do
-                      curl -sf http://localhost:8080/api/plan/list 2>/dev/null && break
-                      sleep 3
+                    SERVICES=""
+                    [ "$NEED_BACKEND" = "true" ] && SERVICES="$SERVICES backend"
+                    [ "$NEED_FRONTEND" = "true" ] && SERVICES="$SERVICES frontend"
+                    [ "$NEED_XMIND" = "true" ] && SERVICES="$SERVICES xmind-service"
+                    
+                    echo "Rebuilding services: $SERVICES"
+                    
+                    # 停止需要重建的服务
+                    for svc in $SERVICES; do
+                        docker-compose stop $svc || true
                     done
+                    
+                    # 增量构建 + 启动
+                    docker-compose up -d --build $SERVICES
+                    
+                    # 等待后端就绪（如果重建了 backend）
+                    if [ "$NEED_BACKEND" = "true" ]; then
+                        for i in $(seq 1 30); do
+                            curl -sf http://localhost:8080/api/plan/list 2>/dev/null && break
+                            sleep 3
+                        done
+                    fi
                 '''
             }
         }
         
         stage('Health Check') {
             steps {
-                sh '''
-                    curl -f http://localhost:80 || exit 1
-                '''
+                sh 'curl -f http://localhost:80 || exit 1'
             }
         }
     }
