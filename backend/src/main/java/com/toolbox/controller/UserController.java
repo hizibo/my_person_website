@@ -26,7 +26,7 @@ public class UserController {
         List<User> users = userService.findAll();
         // 返回时隐藏密码
         List<Map<String, Object>> result = users.stream().map(u -> {
-            Map<String, Object> map = new java.util LinkedHashMap<>();
+            Map<String, Object> map = new java.util.LinkedHashMap<>();
             map.put("id", u.getId());
             map.put("username", u.getUsername());
             map.put("permissions", u.getPermissions() != null ? u.getPermissions() : "");
