@@ -898,6 +898,14 @@ onMounted(() => { fetchCategories() })
 .meta-section { padding: 0 0 8px; border-bottom: 1px dashed #ebeef5; margin-bottom: 8px; flex-shrink: 0; }
 .meta-section .el-form-item { margin-bottom: 8px; }
 
+/* 笔记编辑器容器 */
+.note-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
 /* 内容区 - 自动撑满剩余高度 */
 .editor-content-area {
   flex: 1;
