@@ -27,12 +27,13 @@ pipeline {
                     // 检测各服务是否有改动
                     env.NEED_BACKEND = changes.contains('backend/') ? 'true' : 'false'
                     env.NEED_FRONTEND = changes.contains('frontend/') ? 'true' : 'false'
-                    env.NEED_XMIND = changes.contains('python-services/') ? 'true' : 'false'
+                    env.NEED_XMIND = changes.contains('python-services/xmind_parser/') ? 'true' : 'false'
+                    env.NEED_DATAGEN = changes.contains('python-services/data_generator/') ? 'true' : 'false'
                     
-                    echo "Need rebuild - backend: ${env.NEED_BACKEND}, frontend: ${env.NEED_FRONTEND}, xmind: ${env.NEED_XMIND}"
+                    echo "Need rebuild - backend: ${env.NEED_BACKEND}, frontend: ${env.NEED_FRONTEND}, xmind: ${env.NEED_XMIND}, datagen: ${env.NEED_DATAGEN}"
                     
                     // 如果没有任何服务改动，跳过构建
-                    if (env.NEED_BACKEND == 'false' && env.NEED_FRONTEND == 'false' && env.NEED_XMIND == 'false') {
+                    if (env.NEED_BACKEND == 'false' && env.NEED_FRONTEND == 'false' && env.NEED_XMIND == 'false' && env.NEED_DATAGEN == 'false') {
                         env.SKIP_BUILD = 'true'
                         echo "No service changes detected, skipping build."
                     }
@@ -50,6 +51,7 @@ pipeline {
                     [ "$NEED_BACKEND" = "true" ] && SERVICES="$SERVICES backend"
                     [ "$NEED_FRONTEND" = "true" ] && SERVICES="$SERVICES frontend"
                     [ "$NEED_XMIND" = "true" ] && SERVICES="$SERVICES xmind-service"
+                    [ "$NEED_DATAGEN" = "true" ] && SERVICES="$SERVICES data-generator"
                     
                     echo "Rebuilding services: $SERVICES"
                     

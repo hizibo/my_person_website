@@ -55,6 +55,16 @@ services:
     ports:
       - "8001:8001"
 
+  # Python 批量数据生成服务
+  data-generator:
+    build:
+      context: ./python-services/data_generator
+      dockerfile: Dockerfile
+    container_name: website-datagen
+    restart: unless-stopped
+    ports:
+      - "8002:8002"
+
   # Vue 前端
   frontend:
     build:

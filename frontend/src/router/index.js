@@ -39,6 +39,11 @@ const routes = [
         path: 'tools/json',
         name: 'JsonTool',
         component: () => import('@/views/tools/JsonTool.vue')
+      },
+      {
+        path: 'tools/datagen',
+        name: 'BatchDataGen',
+        component: () => import('@/views/tools/BatchDataGen.vue')
       }
     ]
   }

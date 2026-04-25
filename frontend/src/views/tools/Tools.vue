@@ -83,6 +83,15 @@ const localTools = [
     status: 'online'
   },
   {
+    id: 'batch-datagen',
+    name: '批量数据生成',
+    icon: '🗄️',
+    category: '测试工具',
+    description: '生成 MySQL/Oracle 批量测试数据 SQL 脚本，支持 Faker 随机与多表关联',
+    route: '/tools/datagen',
+    status: 'online'
+  },
+  {
     id: 'json-format',
     name: 'JSON 格式化',
     icon: '📋',
