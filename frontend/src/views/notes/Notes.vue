@@ -901,7 +901,7 @@ onMounted(() => { fetchCategories() })
 /* 内容区 - 自动撑满剩余高度 */
 .editor-content-area {
   flex: 1;
-  min-height: 0;
+  min-height: 300px; /* 初始最小高度，确保初始显示 */
   display: flex;
   flex-direction: column;
 }
@@ -910,11 +910,12 @@ onMounted(() => { fetchCategories() })
   min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden; /* 防止内容溢出 */
 }
 .editor-content-area .md-main {
   flex: 1;
   min-height: 0;
-  height: auto !important;
+  overflow: hidden; /* 内部通过 textarea/preview 自己滚动 */
 }
 
 /* ========== Markdown 编辑器样式 ========== */
@@ -972,6 +973,7 @@ onMounted(() => { fetchCategories() })
 .md-textarea {
   flex: 1;
   min-width: 0;
+  min-height: 200px; /* 初始最小高度 */
   resize: none;
   border: none;
   outline: none;
@@ -983,6 +985,7 @@ onMounted(() => { fetchCategories() })
   background: #fff;
   box-sizing: border-box;
   tab-size: 2;
+  overflow-y: auto; /* 内容超出时内部滚动 */
 }
 
 .md-textarea::placeholder {
@@ -993,6 +996,7 @@ onMounted(() => { fetchCategories() })
 .md-preview {
   flex: 1;
   min-width: 0;
+  min-height: 200px; /* 初始最小高度 */
   border-left: 1px solid #e4e7ed;
   overflow-y: auto;
   padding: 14px 18px;
@@ -1111,14 +1115,19 @@ onMounted(() => { fetchCategories() })
 }
 
 /* ========== 查看对话框样式（全屏） ========== */
-.view-dialog :deep(.el-dialog__header) { padding: 16px 20px; border-bottom: 1px solid #e4e7ed; margin-right: 0; }
+.view-dialog :deep(.el-dialog__header) { 
+  padding: 16px 20px; 
+  border-bottom: 1px solid #e4e7ed; 
+  margin-right: 0; 
+  text-align: center; /* 标题居中 */
+}
 .view-dialog :deep(.el-dialog__body) { 
   padding: 24px 48px; 
   height: calc(100vh - 80px); 
   overflow-y: auto; 
 }
 .view-dialog :deep(.el-dialog__close) { font-size: 20px; }
-.view-dialog-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.view-dialog-header { display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
 .view-dialog-title { font-size: 20px; font-weight: 600; color: #1f2328; margin: 0; }
 .view-dialog-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .view-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
@@ -1127,7 +1136,7 @@ onMounted(() => { fetchCategories() })
   max-width: 900px; 
   margin: 0 auto; 
 }
-.view-summary { background: #f6f8fa; border-radius: 6px; padding: 16px 20px; font-size: 14px; color: #57606a; line-height: 1.6; margin-bottom: 24px; }
+.view-summary { background: #f6f8fa; border-radius: 6px; padding: 16px 20px; font-size: 14px; color: #57606a; line-height: 1.6; margin-bottom: 24px; text-align: center; /* 摘要居中 */ }
 .view-summary p { margin: 0; }
 .view-body { 
   line-height: 1.8; 
