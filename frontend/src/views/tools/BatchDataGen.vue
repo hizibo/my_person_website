@@ -185,10 +185,40 @@
         <!-- 日期/日期时间 -->
         <template v-if="editingRule.type === 'date' || editingRule.type === 'datetime'">
           <el-form-item label="起始日期">
-            <el-date-picker v-model="editingRule.start_date" type="date" value-format="YYYY-MM-DD" />
+            <el-date-picker
+              v-if="editingRule.type === 'date'"
+              v-model="editingRule.start_date"
+              type="date"
+              value-format="YYYY-MM-DD"
+              placeholder="选择日期"
+              style="width: 100%"
+            />
+            <el-date-picker
+              v-else
+              v-model="editingRule.start_date"
+              type="datetime"
+              value-format="YYYY-MM-DD HH:mm:ss"
+              placeholder="选择日期时间"
+              style="width: 100%"
+            />
           </el-form-item>
           <el-form-item label="结束日期">
-            <el-date-picker v-model="editingRule.end_date" type="date" value-format="YYYY-MM-DD" />
+            <el-date-picker
+              v-if="editingRule.type === 'date'"
+              v-model="editingRule.end_date"
+              type="date"
+              value-format="YYYY-MM-DD"
+              placeholder="选择日期"
+              style="width: 100%"
+            />
+            <el-date-picker
+              v-else
+              v-model="editingRule.end_date"
+              type="datetime"
+              value-format="YYYY-MM-DD HH:mm:ss"
+              placeholder="选择日期时间"
+              style="width: 100%"
+            />
           </el-form-item>
           <el-form-item v-if="editingRule.type === 'date'" label="日期格式">
             <el-select v-model="editingRule.date_format">

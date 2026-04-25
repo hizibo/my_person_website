@@ -15,34 +15,47 @@
             <p>在 XMind 中按以下层级结构组织思维导图：</p>
             <pre class="guide-tree">项目名称（根节点）
 ├── 模块A
-│   ├── 功能点1
-│   │   ├── 测试场景1-1
-│   │   └── 测试场景1-2
-│   └── 功能点2
-│       └── 测试场景2-1
+│   ├── 预置条件1
+│   │   ├── 测试步骤1
+│   │   │   ├── 预期结果1
+│   │   │   └── 预期结果2
+│   │   └── 测试步骤2
+│   │       └── 预期结果3
+│   └── 预置条件2
+│       └── 测试步骤3
+│           └── 预期结果4
 └── 模块B
-    └── 功能点3
-        └── 测试场景3-1</pre>
+    └── 预置条件3
+        └── 测试步骤4
+            └── 预期结果5</pre>
             <p><strong>2. 层级说明</strong></p>
             <ul>
-              <li><strong>第1层</strong>（根节点）→ 项目名称，不生成用例</li>
+              <li><strong>第1层</strong>（根节点）→ 项目名称，<em>不生成用例</em></li>
               <li><strong>第2层</strong> → <el-tag size="small">所属模块</el-tag></li>
-              <li><strong>第3层</strong> → <el-tag size="small" type="warning">功能点</el-tag></li>
-              <li><strong>第4层及以下</strong> → <el-tag size="small" type="success">用例名称</el-tag>，每个叶子节点生成一条测试用例</li>
+              <li><strong>第3层</strong> → <el-tag size="small" type="warning">预置条件</el-tag></li>
+              <li><strong>第4层</strong> → <el-tag size="small" type="info">测试步骤</el-tag></li>
+              <li><strong>第5层及以下</strong> → <el-tag size="small" type="success">预期结果</el-tag></li>
             </ul>
-            <p><strong>3. 优先级自动推断</strong></p>
+            <p><strong>3. 用例名生成规则</strong></p>
+            <p>用例名称 = <strong>预置条件</strong> _ <strong>测试步骤</strong> _ <strong>预期结果</strong>（下划线连接）</p>
+            <p><strong>4. 优先级规则</strong></p>
             <ul>
-              <li>2层深度 → <el-tag type="danger" size="small">P0</el-tag></li>
-              <li>3层深度 → <el-tag type="warning" size="small">P1</el-tag></li>
-              <li>4层及以上 → <el-tag type="info" size="small">P2</el-tag></li>
+              <li>4层深度（项目→模块→预置条件→步骤）→ <el-tag type="danger" size="small">P0</el-tag></li>
+              <li>5层深度（再加1层预期结果）→ <el-tag type="warning" size="small">P1</el-tag></li>
+              <li>6层及以上 → <el-tag type="info" size="small">P2</el-tag></li>
             </ul>
-            <p><strong>4. 导出</strong></p>
-            <p>转换完成后可导出为 Excel 文件，包含模块、功能点、用例名称、优先级、前置条件、测试步骤、预期结果等字段。</p>
+            <p><strong>5. 转换结果说明</strong></p>
+            <ul>
+              <li><strong>识别数</strong>：识别到"预置条件"层级的节点数量（表示有多少条有基本的模块-预置条件结构）</li>
+              <li><strong>转换成功数</strong>：实际生成测试用例的数量（需要至少4层：模块→预置条件→步骤→预期结果）</li>
+              <li>层数不足的分支会被自动跳过，不影响其他正常用例</li>
+            </ul>
             <p><strong>⚠️ 注意事项</strong></p>
             <ul>
               <li>仅支持 <code>.xmind</code> 格式文件（XMind 8 及以上版本）</li>
-              <li>请确保 XMind 文件中每个分支都有至少3层结构（模块→功能→用例），否则可能无法正确提取用例</li>
-              <li>叶子节点（没有子节点的末端节点）会被识别为测试用例</li>
+              <li>每个分支必须至少包含"模块→预置条件→测试步骤→预期结果"4层才会生成用例</li>
+              <li>缺少步骤或预期结果的分支会被跳过，转换结果中会显示跳过数量</li>
+              <li>叶子节点即预期结果层，同一步骤下可添加多个预期结果</li>
             </ul>
           </div>
         </el-collapse-item>
@@ -75,6 +88,16 @@
       <el-button @click="previewResult" :icon="View" size="small">预览结果</el-button>
     </div>
 
+    <!-- 转换统计 -->
+    <div class="stats-section" v-if="parseDone">
+      <el-alert
+        :title="`识别到 ${recognizedCount} 条，转换成功 ${convertedCount} 条${recognizedCount - convertedCount > 0 ? `（跳过 ' + (recognizedCount - convertedCount) + ' 条，结构不满足）` : ''}`"
+        :type="convertedCount > 0 ? 'success' : 'warning'"
+        :closable="false"
+        show-icon
+      />
+    </div>
+
     <!-- 结果预览 -->
     <div class="result-section" v-if="testCases.length > 0">
       <div class="result-header">
@@ -85,15 +108,14 @@
       <div class="table-wrapper">
         <el-table :data="testCases" stripe border style="width: 100%" size="small">
           <el-table-column prop="module" label="所属模块" width="120" />
-          <el-table-column prop="feature" label="功能点" width="120" />
-          <el-table-column prop="caseName" label="用例名称" min-width="150" />
+          <el-table-column prop="feature" label="预置条件" width="150" show-overflow-tooltip />
+          <el-table-column prop="caseName" label="用例名称" min-width="200" show-overflow-tooltip />
           <el-table-column prop="priority" label="优先级" width="70">
             <template #default="{ row }">
               <el-tag :type="getPriorityType(row.priority)" size="small">{{ row.priority }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="precondition" label="前置条件" min-width="120" show-overflow-tooltip />
-          <el-table-column prop="steps" label="测试步骤" min-width="150" show-overflow-tooltip />
+          <el-table-column prop="steps" label="测试步骤" min-width="120" show-overflow-tooltip />
           <el-table-column prop="expected" label="预期结果" min-width="120" show-overflow-tooltip />
         </el-table>
       </div>
@@ -128,6 +150,9 @@ const loading = ref(false)
 const testCases = ref([])
 const mindmapData = ref(null)
 const treeData = ref([])
+const parseDone = ref(false)
+const recognizedCount = ref(0)
+const convertedCount = ref(0)
 
 const treeProps = {
   children: 'children',
@@ -145,6 +170,7 @@ const parseXmind = async () => {
   }
 
   loading.value = true
+  parseDone.value = false
   try {
     const formData = new FormData()
     formData.append('file', fileData.value.raw)
@@ -154,10 +180,19 @@ const parseXmind = async () => {
     })
 
     if (res.data.code === 200) {
-      testCases.value = res.data.data.cases
-      mindmapData.value = res.data.data.mindmap
+      const data = res.data.data
+      testCases.value = data.cases || []
+      recognizedCount.value = data.recognizedCount || 0
+      convertedCount.value = data.convertedCount || 0
+      parseDone.value = true
+      mindmapData.value = data.mindmap
       buildTreeData(mindmapData.value)
-      ElMessage.success(`转换成功，共 ${testCases.value.length} 条测试用例`)
+
+      if (convertedCount.value > 0) {
+        ElMessage.success(`转换完成：识别 ${recognizedCount.value} 条，成功转换 ${convertedCount.value} 条`)
+      } else {
+        ElMessage.warning(`识别 ${recognizedCount.value} 条，但无合法用例（请检查层级是否满足：模块→预置条件→步骤→预期结果）`)
+      }
     } else {
       ElMessage.error(res.data.message || '转换失败')
     }
@@ -251,6 +286,10 @@ const buildTreeData = (data) => {
   gap: 10px;
   margin-bottom: 20px;
   flex-wrap: wrap;
+}
+
+.stats-section {
+  margin-bottom: 16px;
 }
 
 .result-section {
@@ -359,28 +398,7 @@ const buildTreeData = (data) => {
 
   .guide-tree {
     font-size: 11px;
-  padding: 8px 10px;
-  }
-
-  .tool-header {
-    margin-bottom: 14px;
-  }
-
-  .tool-title {
-    font-size: 17px;
-  }
-
-  .result-section,
-  .tree-section {
-    padding: 12px;
-  }
-
-  .export-bar {
-    flex-direction: column;
-  }
-
-  .export-bar .el-button {
-    width: 100%;
+    padding: 8px 10px;
   }
 }
 </style>
