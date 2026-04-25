@@ -39,6 +39,15 @@
             <span class="nav-text">工具</span>
           </router-link>
         </nav>
+        <!-- 主题切换 -->
+        <div class="theme-toggle">
+          <el-tooltip :content="themeDark ? '切换亮色模式' : '切换深色模式'" placement="right">
+            <div class="theme-btn" @click="toggleTheme">
+              <el-icon :size="20"><Sunny v-if="themeDark" /><Moon v-else /></el-icon>
+              <span>{{ themeDark ? '亮色模式' : '深色模式' }}</span>
+            </div>
+          </el-tooltip>
+        </div>
         <!-- 登录状态指示 -->
         <div class="auth-status" v-if="isLoggedIn">
           <span class="auth-user">👤 {{ username }}</span>
@@ -57,10 +66,19 @@
 <script setup>
 import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { Sunny, Moon } from '@element-plus/icons-vue'
 
 const sidebarOpen = ref(false)
+const themeDark = ref(localStorage.getItem('theme') === 'dark')
 const route = useRoute()
 const router = useRouter()
+
+const toggleTheme = () => {
+  themeDark.value = !themeDark.value
+  localStorage.setItem('theme', themeDark.value ? 'dark' : 'light')
+  document.documentElement.setAttribute('data-theme', themeDark.value ? 'dark' : 'light')
+  window.dispatchEvent(new CustomEvent('theme-change'))
+}
 
 // 登录状态（响应式，通过事件刷新）
 const isLoggedIn = ref(!!localStorage.getItem('auth_token'))
@@ -274,6 +292,76 @@ const handleLogout = () => {
 
 .auth-logout:hover {
   color: #ff6b6b;
+}
+
+/* ========== 主题切换按钮 ========== */
+.theme-toggle {
+  margin-top: 8px;
+  padding: 8px 16px;
+}
+
+.theme-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #bdc3c7;
+  cursor: pointer;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.theme-btn:hover {
+  background-color: #34495e;
+  color: white;
+}
+
+/* ========== 深色主题 CSS 变量 ========== */
+[data-theme="dark"] {
+  --bg-primary: #1a1a2e;
+  --bg-secondary: #16213e;
+  --bg-card: #0f3460;
+  --text-primary: #e8e8e8;
+  --text-secondary: #a0a0a0;
+  --border-color: #2a2a4a;
+  --sidebar-bg: #16213e;
+}
+
+[data-theme="dark"] body {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .main-content {
+  background-color: var(--bg-primary) !important;
+}
+
+[data-theme="dark"] .sidebar {
+  background: linear-gradient(180deg, #16213e 0%, #1a1a2e 100%) !important;
+}
+
+[data-theme="dark"] .sidebar .nav-item {
+  color: #c8d6e5;
+}
+
+[data-theme="dark"] .sidebar .nav-item:hover,
+[data-theme="dark"] .sidebar .nav-item.router-link-active {
+  background-color: #0f3460;
+  color: white;
+}
+
+[data-theme="dark"] .sidebar .auth-status {
+  border-top-color: #2a2a4a;
+}
+
+[data-theme="dark"] .sidebar .theme-btn {
+  color: #a0a0a0;
+}
+
+[data-theme="dark"] .theme-btn:hover {
+  background-color: #0f3460;
+  color: white;
 }
 
 /* ========== 主内容区 ========== */

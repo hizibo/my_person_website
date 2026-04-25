@@ -227,6 +227,7 @@
               <span class="view-date">{{ viewForm ? formatDate(viewForm.createTime) : '' }}</span>
             </div>
             <el-button type="primary" @click="goEditFromView" :icon="Edit" size="small">修改</el-button>
+            <el-button type="success" @click="exportNotePdf" :icon="Download" size="small" style="margin-left: 6px;">导出PDF</el-button>
           </div>
         </div>
       </template>
@@ -268,12 +269,14 @@ import {
   Plus, Edit, Delete, Search, InfoFilled, Expand, Fold,
   ArrowDown, ArrowRight, ArrowLeft, ArrowUp, Finished, WarnTriangleFilled,
   CircleCloseFilled, Menu, ChatLineSquare, List as ListIcon, Link,
-  Picture, Minus, Grid, UploadFilled
+  Picture, Minus, Grid, UploadFilled, Download
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { marked } from 'marked'
 import hljs from 'highlight.js'
 import axios from 'axios'
+import { jsPDF } from 'jspdf'
+import html2canvas from 'html2canvas'
 
 const API_BASE = '/api/note'
 const CATEGORY_API = '/api/note/category'
@@ -908,6 +911,62 @@ const deleteNote = async (id) => {
     if (response.data && response.data.code === 200) { ElMessage.success('删除成功'); await fetchNotesByCategory(selectedCategoryId.value) }
     else { ElMessage.error(response.data.msg || '删除失败') }
   } catch (error) { if (error !== 'cancel') { console.error('删除笔记失败:', error); ElMessage.error('删除失败') } }
+}
+
+// ========== PDF 导出功能 ==========
+const exportNotePdf = async () => {
+  if (!viewForm.value) return
+  const loading = ElMessage.loading('正在生成 PDF...')
+  try {
+    // 创建一个临时 div 用于渲染笔记内容
+    const tempDiv = document.createElement('div')
+    tempDiv.style.cssText = 'position:fixed;left:-9999px;top:0;width:780px;padding:40px 48px;background:#fff;font-family:"Microsoft YaHei",sans-serif;font-size:14px;line-height:1.8;color:#333;'
+    tempDiv.innerHTML = `
+      <div style="margin-bottom:12px;">
+        <h1 style="font-size:22px;margin:0 0 8px;color:#1a1a1a;">${viewForm.value.title || ''}</h1>
+        <div style="font-size:12px;color:#888;">
+          <span style="margin-right:12px;">分类：${viewForm.value.categoryName || ''}</span>
+          ${viewForm.value.tags ? `<span style="margin-right:12px;">标签：${viewForm.value.tags}</span>` : ''}
+          <span>创建时间：${formatDate(viewForm.value.createTime) || ''}</span>
+        </div>
+        ${viewForm.value.summary ? `<div style="margin-top:16px;padding:12px 16px;background:#f5f7fa;border-left:4px solid #409eff;font-size:13px;color:#555;border-radius:4px;">${viewForm.value.summary}</div>` : ''}
+        <div style="height:1px;background:#e8e8e8;margin-top:16px;"></div>
+      </div>
+      <div class="markdown-body">${renderedViewContent.value || ''}</div>
+    `
+    document.body.appendChild(tempDiv)
+    // 等图片等资源加载完成
+    await new Promise(r => setTimeout(r, 800))
+    const canvas = await html2canvas(tempDiv, { scale: 2, useCORS: true, allowTaint: false, backgroundColor: '#ffffff' })
+    document.body.removeChild(tempDiv)
+    const imgData = canvas.toDataURL('image/jpeg', 0.95)
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' })
+    const pageW = pdf.internal.pageSize.getWidth()
+    const pageH = pdf.internal.pageSize.getHeight()
+    const imgW = canvas.width
+    const imgH = canvas.height
+    const ratio = pageW / imgW
+    const scaledH = imgH * ratio
+    let y = 0
+    let remaining = scaledH
+    while (remaining > 0) {
+      if (y > 0) { pdf.addPage(); y = 0 }
+      const availH = pageH - 60
+      const sliceH = Math.min(availH, remaining)
+      const sliceImgH = sliceH / ratio
+      pdf.addImage(imgData, 'JPEG', 0, 60 - y, pageW, scaledH, undefined, 'FAST')
+      y += sliceH
+      remaining -= sliceH
+    }
+    const safeTitle = (viewForm.value.title || '笔记').replace(/[/\\:*?"<>|]/g, '_')
+    pdf.save(`${safeTitle}.pdf`)
+    ElMessage.success('PDF 导出成功')
+  } catch (e) {
+    console.error('PDF导出失败:', e)
+    ElMessage.error('PDF 导出失败：' + (e.message || '未知错误'))
+  } finally {
+    loading.close()
+  }
 }
 
 onMounted(() => { fetchCategories() })
