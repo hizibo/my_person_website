@@ -12,16 +12,9 @@ import zipfile
 import io
 from typing import Optional
 
-app = FastAPI(title="XMind解析服务", version="1.0.0")
+from fastapi import APIRouter
 
-# CORS 允许前端跨域
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+router = APIRouter()
 
 
 class ParseResponse(BaseModel):
@@ -112,7 +105,7 @@ def parse_xmind_file(file_bytes: bytes) -> dict:
     }
 
 
-@app.post("/parse-xmind", response_model=ParseResponse)
+@router.post("/parse-xmind", response_model=ParseResponse)
 async def parse_xmind(file: UploadFile = File(...)):
     """解析XMind文件，转换为测试用例"""
     if not file.filename.endswith(".xmind"):
@@ -130,7 +123,7 @@ async def parse_xmind(file: UploadFile = File(...)):
     )
 
 
-@app.post("/parse-xmind-base64")
+@router.post("/parse-xmind-base64")
 async def parse_xmind_base64(body: dict):
     """接收Base64编码的XMind文件"""
     try:
@@ -146,12 +139,7 @@ async def parse_xmind_base64(body: dict):
     }
 
 
-@app.get("/health")
+@router.get("/health")
 async def health():
     """健康检查"""
     return {"status": "ok", "service": "xmind-parser"}
-
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8001)

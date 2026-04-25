@@ -3,8 +3,7 @@
 支持 MySQL / Oracle SQL 脚本生成，Faker 随机数据，变量引用实现多表关联
 """
 
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional, Dict
 import random
@@ -13,15 +12,7 @@ import re
 from datetime import datetime, timedelta
 from faker import Faker
 
-app = FastAPI(title="批量数据生成服务", version="1.0.0")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+router = APIRouter()
 
 fake_cn = Faker('zh_CN')
 
@@ -59,7 +50,7 @@ FAKER_TYPES = {
 }
 
 
-@app.get("/faker-types")
+@router.get("/faker-types")
 async def get_faker_types():
     """获取可用的 Faker 类型列表"""
     return {k: v['label'] for k, v in FAKER_TYPES.items()}
@@ -312,7 +303,7 @@ def generate_oracle_sql(request: GenerateRequest, variable_values: Dict[str, Lis
     return "\n".join(lines)
 
 
-@app.post("/generate", response_model=GenerateResponse)
+@router.post("/generate", response_model=GenerateResponse)
 async def generate_sql(request: GenerateRequest):
     if not request.tables:
         raise HTTPException(status_code=400, detail="至少需要一张表")
@@ -360,6 +351,6 @@ async def generate_sql(request: GenerateRequest):
     )
 
 
-@app.get("/health")
+@router.get("/health")
 async def health():
     return {"status": "ok", "service": "data-generator"}

@@ -36,34 +36,24 @@ services:
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
       JAVA_OPTS: "-Xmx256m -Xms128m"
-      PYTHON_XMIND_URL: http://xmind-service:8001/parse-xmind-base64
+      PYTHON_XMIND_URL: http://python-tools:8001/xmind/parse-xmind-base64
     volumes:
       - uploads_data:/uploads
     depends_on:
       mysql:
         condition: service_healthy
-      xmind-service:
+      python-tools:
         condition: service_started
 
-  # Python XMind 解析服务
-  xmind-service:
+  # Python 工具服务（XMind解析 + 批量数据生成 + 后续工具）
+  python-tools:
     build:
       context: ./python-services
       dockerfile: Dockerfile
-    container_name: website-xmind
+    container_name: website-python-tools
     restart: unless-stopped
     ports:
       - "8001:8001"
-
-  # Python 批量数据生成服务
-  data-generator:
-    build:
-      context: ./python-services/data_generator
-      dockerfile: Dockerfile
-    container_name: website-datagen
-    restart: unless-stopped
-    ports:
-      - "8002:8002"
 
   # Vue 前端
   frontend:

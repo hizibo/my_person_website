@@ -14,7 +14,7 @@ public class XmindService {
 
     private static final Logger log = LoggerFactory.getLogger(XmindService.class);
 
-    @Value("${python.xmind.url:http://xmind-service:8001/parse-xmind-base64}")
+    @Value("${python.xmind.url:http://python-tools:8001/xmind/parse-xmind-base64}")
     private String pythonUrl;
 
     /**
