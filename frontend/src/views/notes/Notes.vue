@@ -271,7 +271,7 @@ import {
   CircleCloseFilled, Menu, ChatLineSquare, List as ListIcon, Link,
   Picture, Minus, Grid, UploadFilled, Download
 } from '@element-plus/icons-vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'
 import { marked } from 'marked'
 import hljs from 'highlight.js'
 import axios from 'axios'
@@ -916,7 +916,7 @@ const deleteNote = async (id) => {
 // ========== PDF 导出功能 ==========
 const exportNotePdf = async () => {
   if (!viewForm.value) return
-  const loading = ElMessage.loading('正在生成 PDF...')
+  const loadingInstance = ElLoading.service({ text: '正在生成 PDF...', background: 'rgba(0,0,0,0.5)' })
   try {
     // 创建一个临时 div 用于渲染笔记内容
     const tempDiv = document.createElement('div')
@@ -965,7 +965,7 @@ const exportNotePdf = async () => {
     console.error('PDF导出失败:', e)
     ElMessage.error('PDF 导出失败：' + (e.message || '未知错误'))
   } finally {
-    loading.close()
+    loadingInstance.close()
   }
 }
 
