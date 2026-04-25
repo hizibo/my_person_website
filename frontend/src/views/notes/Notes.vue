@@ -966,7 +966,7 @@ onMounted(() => { fetchCategories() })
   display: flex;
   flex: 1;
   min-height: 0;
-  height: 420px;
+  /* 高度由父容器 editor-content-area 自动撑满 */
 }
 
 .md-textarea {
