@@ -18,17 +18,21 @@
       <div class="sidebar-inner">
         <h1 class="logo">🌟 个人网站</h1>
         <nav class="nav">
-          <router-link v-if="isLoggedIn" to="/plan" class="nav-item" @click="closeSidebarOnMobile">
+          <router-link v-if="isLoggedIn && hasPerm('plan')" to="/plan" class="nav-item" @click="closeSidebarOnMobile">
             <span class="nav-icon">📋</span>
             <span class="nav-text">计划</span>
           </router-link>
-          <router-link v-if="isLoggedIn" to="/notes" class="nav-item" @click="closeSidebarOnMobile">
+          <router-link v-if="isLoggedIn && hasPerm('notes')" to="/notes" class="nav-item" @click="closeSidebarOnMobile">
             <span class="nav-icon">📝</span>
             <span class="nav-text">笔记</span>
           </router-link>
-          <router-link v-if="isLoggedIn" to="/website" class="nav-item" @click="closeSidebarOnMobile">
+          <router-link v-if="isLoggedIn && hasPerm('website')" to="/website" class="nav-item" @click="closeSidebarOnMobile">
             <span class="nav-icon">🌐</span>
             <span class="nav-text">网站</span>
+          </router-link>
+          <router-link v-if="isLoggedIn && hasPerm('permission')" to="/permission" class="nav-item" @click="closeSidebarOnMobile">
+            <span class="nav-icon">🔑</span>
+            <span class="nav-text">权限</span>
           </router-link>
           <router-link to="/tools" class="nav-item" @click="closeSidebarOnMobile">
             <span class="nav-icon">🧰</span>
@@ -61,10 +65,22 @@ const router = useRouter()
 // 登录状态（响应式，通过事件刷新）
 const isLoggedIn = ref(!!localStorage.getItem('auth_token'))
 const username = ref(localStorage.getItem('auth_username') || '')
+const userPermissions = ref(getUserPermissions())
+
+function getUserPermissions() {
+  const perms = localStorage.getItem('auth_permissions') || ''
+  return perms ? perms.split(',').filter(p => p.trim()) : []
+}
+
+// 判断用户是否有某权限（admin 拥有 all，全部放行）
+function hasPerm(key) {
+  return userPermissions.value.includes('all') || userPermissions.value.includes(key)
+}
 
 const refreshAuthState = () => {
   isLoggedIn.value = !!localStorage.getItem('auth_token')
   username.value = localStorage.getItem('auth_username') || ''
+  userPermissions.value = getUserPermissions()
 }
 
 onMounted(() => {
@@ -93,6 +109,7 @@ const closeSidebarOnMobile = () => {
 const handleLogout = () => {
   localStorage.removeItem('auth_token')
   localStorage.removeItem('auth_username')
+  localStorage.removeItem('auth_permissions')
   window.dispatchEvent(new CustomEvent('auth-change', { detail: { action: 'logout' } }))
   router.push('/tools')
 }

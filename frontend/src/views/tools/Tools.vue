@@ -167,9 +167,10 @@ const handleLogin = async () => {
       password: loginForm.value.password
     })
     if (res.data.code === 200) {
-      const { token, username: name } = res.data.data
+      const { token, username: name, permissions } = res.data.data
       localStorage.setItem('auth_token', token)
       localStorage.setItem('auth_username', name)
+      localStorage.setItem('auth_permissions', permissions || '')
       isLoggedIn.value = true
       username.value = name
       showLogin.value = false
@@ -191,6 +192,7 @@ const handleLogin = async () => {
 const handleLogout = () => {
   localStorage.removeItem('auth_token')
   localStorage.removeItem('auth_username')
+  localStorage.removeItem('auth_permissions')
   isLoggedIn.value = false
   username.value = ''
   window.dispatchEvent(new CustomEvent('auth-change', { detail: { action: 'logout' } }))
