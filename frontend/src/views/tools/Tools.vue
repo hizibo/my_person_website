@@ -106,7 +106,25 @@ onMounted(async () => {
   try {
     const res = await axios.get('/api/tool/list')
     if (res.data.code === 200) {
-      tools.value = res.data.data
+      const backendTools = res.data.data
+      // 合并后端和本地工具，以后端为主，本地补充缺失的
+      const backendIds = new Set(backendTools.map(t => t.toolId || t.id))
+      const merged = [...backendTools]
+      for (const local of localTools) {
+        if (!backendIds.has(local.id)) {
+          merged.push({
+            id: local.id,
+            toolId: local.id,
+            name: local.name,
+            icon: local.icon,
+            category: local.category,
+            description: local.description,
+            route: local.route,
+            status: local.status
+          })
+        }
+      }
+      tools.value = merged
     } else {
       tools.value = localTools
     }
@@ -130,7 +148,10 @@ const groupedTools = computed(() => {
 
 const goTool = (tool) => {
   if (tool.status === 'online') {
-    router.push(tool.route)
+    const route = tool.route || tool.backendPath
+    if (route) {
+      router.push(route)
+    }
   }
 }
 

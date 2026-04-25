@@ -6,6 +6,49 @@
       <h2 class="tool-title">🧪 XMind 转测试用例</h2>
     </div>
 
+    <!-- 使用说明 -->
+    <div class="guide-section">
+      <el-collapse>
+        <el-collapse-item title="📖 使用说明" name="guide">
+          <div class="guide-content">
+            <p><strong>1. 准备 XMind 文件</strong></p>
+            <p>在 XMind 中按以下层级结构组织思维导图：</p>
+            <pre class="guide-tree">项目名称（根节点）
+├── 模块A
+│   ├── 功能点1
+│   │   ├── 测试场景1-1
+│   │   └── 测试场景1-2
+│   └── 功能点2
+│       └── 测试场景2-1
+└── 模块B
+    └── 功能点3
+        └── 测试场景3-1</pre>
+            <p><strong>2. 层级说明</strong></p>
+            <ul>
+              <li><strong>第1层</strong>（根节点）→ 项目名称，不生成用例</li>
+              <li><strong>第2层</strong> → <el-tag size="small">所属模块</el-tag></li>
+              <li><strong>第3层</strong> → <el-tag size="small" type="warning">功能点</el-tag></li>
+              <li><strong>第4层及以下</strong> → <el-tag size="small" type="success">用例名称</el-tag>，每个叶子节点生成一条测试用例</li>
+            </ul>
+            <p><strong>3. 优先级自动推断</strong></p>
+            <ul>
+              <li>2层深度 → <el-tag type="danger" size="small">P0</el-tag></li>
+              <li>3层深度 → <el-tag type="warning" size="small">P1</el-tag></li>
+              <li>4层及以上 → <el-tag type="info" size="small">P2</el-tag></li>
+            </ul>
+            <p><strong>4. 导出</strong></p>
+            <p>转换完成后可导出为 Excel 文件，包含模块、功能点、用例名称、优先级、前置条件、测试步骤、预期结果等字段。</p>
+            <p><strong>⚠️ 注意事项</strong></p>
+            <ul>
+              <li>仅支持 <code>.xmind</code> 格式文件（XMind 8 及以上版本）</li>
+              <li>请确保 XMind 文件中每个分支都有至少3层结构（模块→功能→用例），否则可能无法正确提取用例</li>
+              <li>叶子节点（没有子节点的末端节点）会被识别为测试用例</li>
+            </ul>
+          </div>
+        </el-collapse-item>
+      </el-collapse>
+    </div>
+
     <!-- 上传区域 -->
     <div class="upload-section">
       <el-upload
@@ -264,10 +307,59 @@ const buildTreeData = (data) => {
   overflow-x: auto;
 }
 
+/* ========== 使用说明样式 ========== */
+.guide-section {
+  margin-bottom: 20px;
+}
+
+.guide-content {
+  font-size: 14px;
+  color: #555;
+  line-height: 1.8;
+}
+
+.guide-content p {
+  margin: 8px 0 4px;
+}
+
+.guide-content ul {
+  padding-left: 20px;
+  margin: 4px 0 8px;
+}
+
+.guide-content li {
+  margin: 3px 0;
+}
+
+.guide-content code {
+  background: #f5f5f5;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 13px;
+  color: #e74c3c;
+}
+
+.guide-tree {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 12px 16px;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-x: auto;
+  margin: 8px 0;
+  font-family: 'Courier New', Consolas, monospace;
+}
+
 /* ========== 响应式：手机 ========== */
 @media screen and (max-width: 768px) {
   .xmind-tool {
     padding: 10px;
+  }
+
+  .guide-tree {
+    font-size: 11px;
+  padding: 8px 10px;
   }
 
   .tool-header {

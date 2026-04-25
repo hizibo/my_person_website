@@ -78,7 +78,15 @@ public class XmindService {
                 mindmap.put("raw", parsed);
 
                 // 提取测试用例
-                cases = extractCasesFromParsed(parsed, new ArrayList<>());
+                // XMind content.json 是 sheet 数组: [{ "rootTopic": {...} }, ...]
+                if (parsed instanceof List) {
+                    // 顶层是数组，遍历每个 sheet
+                    for (Object sheet : (List<?>) parsed) {
+                        cases.addAll(extractCasesFromParsed(sheet, new ArrayList<>()));
+                    }
+                } else {
+                    cases = extractCasesFromParsed(parsed, new ArrayList<>());
+                }
             }
         } catch (Exception e) {
             log.error("原生解析失败: ", e);
@@ -97,21 +105,38 @@ public class XmindService {
         List<Map<String, Object>> cases = new ArrayList<>();
         if (node == null) return cases;
 
-        Map<String, Object> map = null;
+        // 处理数组（递归展开）
+        if (node instanceof List) {
+            for (Object item : (List<?>) node) {
+                cases.addAll(extractCasesFromParsed(item, path));
+            }
+            return cases;
+        }
+
+        if (!(node instanceof Map)) return cases;
+
+        Map<String, Object> map = (Map<String, Object>) node;
         List<Map<String, Object>> children = new ArrayList<>();
 
-        if (node instanceof Map) {
-            map = (Map<String, Object>) node;
-            String title = (String) map.get("title");
+        // 处理 sheet 的 rootTopic 结构
+        if (map.containsKey("rootTopic")) {
+            return extractCasesFromParsed(map.get("rootTopic"), path);
+        }
 
-            if (title != null && !title.isEmpty()) {
-                path = new ArrayList<>(path);
-                path.add(title);
-            }
+        String title = (String) map.get("title");
+        if (title != null && !title.isEmpty()) {
+            path = new ArrayList<>(path);
+            path.add(title);
+        }
 
-            Object topicsObj = map.get("topics");
-            if (topicsObj instanceof List) {
-                children = (List<Map<String, Object>>) topicsObj;
+        Object topicsObj = map.get("topics");
+        if (topicsObj instanceof List) {
+            children = (List<Map<String, Object>>) topicsObj;
+        } else if (topicsObj instanceof Map) {
+            // XMind Zen 格式: { "topics": [ ... ] } 可能嵌套
+            Map<String, Object> topicsMap = (Map<String, Object>) topicsObj;
+            if (topicsMap.containsKey("attached")) {
+                children = (List<Map<String, Object>>) topicsMap.get("attached");
             }
         }
 
