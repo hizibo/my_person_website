@@ -32,6 +32,13 @@ public class NoteController {
         return Result.success(notes);
     }
 
+    @GetMapping("/category/{categoryId}/with-children")
+    @Operation(summary = "根据分类ID获取笔记（含子分类）")
+    public Result<List<Note>> listByCategoryWithChildren(@PathVariable Long categoryId) {
+        List<Note> notes = noteService.getNotesByCategoryIdWithChildren(categoryId);
+        return Result.success(notes);
+    }
+
     @GetMapping("/search")
     @Operation(summary = "搜索笔记")
     public Result<List<Note>> search(@RequestParam String keyword) {

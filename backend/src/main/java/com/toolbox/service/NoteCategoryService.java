@@ -92,4 +92,26 @@ public class NoteCategoryService extends ServiceImpl<NoteCategoryMapper, NoteCat
         // TODO: 检查是否有笔记属于该分类
         return this.removeById(id);
     }
-}
+
+    /**
+     * 获取指定分类及其所有子分类的ID列表
+     */
+    public List<Long> getCategoryAndAllChildrenIds(Long categoryId) {
+        List<Long> ids = new java.util.ArrayList<>();
+        ids.add(categoryId);
+        collectChildrenIds(categoryId, ids);
+        return ids;
+    }
+
+    /**
+     * 递归收集所有子分类ID
+     */
+    private void collectChildrenIds(Long parentId, List<Long> ids) {
+        List<NoteCategory> children = this.lambdaQuery()
+                .eq(NoteCategory::getParentId, parentId)
+                .list();
+        for (NoteCategory child : children) {
+            ids.add(child.getId());
+            collectChildrenIds(child.getId(), ids);
+        }
+    }}

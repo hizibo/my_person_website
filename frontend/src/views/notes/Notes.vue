@@ -40,8 +40,19 @@
               <el-button type="primary" size="small" @click="handleAddCategory" :icon="Plus">新增</el-button>
             </div>
           </div>
+          <!-- 分类搜索框 -->
+          <div class="category-search">
+            <el-input v-model="categorySearchKeyword" placeholder="搜索分类..." clearable size="small" @input="filterCategoryTree">
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+          <!-- 全部笔记选项 -->
+          <div class="all-notes-btn" :class="{ active: !selectedCategoryId }" @click="loadAllNotes">
+            <el-icon><List /></el-icon>
+            <span>全部笔记</span>
+          </div>
           <div class="category-tree-wrapper">
-            <el-tree ref="categoryTreeRef" :data="categoryTree" :props="{ label: 'name', children: 'children' }" node-key="id" highlight-current :expand-on-click-node="false" :default-expanded-keys="defaultExpandedKeys" @node-click="handleCategoryClick">
+            <el-tree ref="categoryTreeRef" :data="filteredCategoryTree" :props="{ label: 'name', children: 'children' }" node-key="id" highlight-current :expand-on-click-node="false" :default-expanded-keys="defaultExpandedKeys" @node-click="handleCategoryClick">
               <template #default="{ node, data }">
                 <span class="custom-tree-node">
                   <span class="node-label">
@@ -355,10 +366,48 @@ const categoryCollapsed = ref(false)
 
 // 分类树
 const categoryTree = ref([])
+const filteredCategoryTree = ref([])
 const categoryTreeRef = ref()
 const selectedCategoryId = ref(null)
 const allExpanded = ref(true)
 const defaultExpandedKeys = ref([])
+
+// 分类搜索
+const categorySearchKeyword = ref('')
+const filterCategoryTree = () => {
+  if (!categorySearchKeyword.value.trim()) {
+    filteredCategoryTree.value = categoryTree.value
+    return
+  }
+  const keyword = categorySearchKeyword.value.toLowerCase()
+  const filterNode = (nodes) => {
+    const result = []
+    for (const node of nodes) {
+      const match = node.name.toLowerCase().includes(keyword)
+      const children = node.children ? filterNode(node.children) : []
+      if (match || children.length > 0) {
+        result.push({ ...node, children })
+      }
+    }
+    return result
+  }
+  filteredCategoryTree.value = filterNode(categoryTree.value)
+}
+
+// 加载全部笔记
+const loadAllNotes = async () => {
+  selectedCategoryId.value = null
+  notesLoading.value = true
+  try {
+    const response = await axios.get(`${API_BASE}/list`)
+    if (response.data && response.data.code === 200) { notes.value = response.data.data }
+    else { ElMessage.error('获取笔记列表失败') }
+  } catch (error) {
+    console.error('获取笔记列表失败:', error); ElMessage.error('获取笔记列表失败')
+  } finally {
+    notesLoading.value = false
+  }
+}
 
 const selectedCategoryName = computed(() => {
   if (!selectedCategoryId.value) return '全部'
@@ -662,10 +711,11 @@ const fetchCategories = async () => {
       }
       tree.forEach(node => sumNoteCount(node))
       categoryTree.value = tree
+      filteredCategoryTree.value = tree  // 初始化过滤后的树
       defaultExpandedKeys.value = getAllNodeKeys()
-      if (tree.length > 0 && !selectedCategoryId.value) {
-        selectedCategoryId.value = tree[0].id
-        fetchNotesByCategory(tree[0].id)
+      // 默认加载全部笔记，不自动选择第一个分类
+      if (!selectedCategoryId.value) {
+        loadAllNotes()
       }
     } else {
       ElMessage.error('获取分类失败')
@@ -747,13 +797,17 @@ const deleteCategory = async (data) => {
   }
 }
 
-const handleCategoryClick = (data) => { selectedCategoryId.value = data.id; fetchNotesByCategory(data.id) }
+const handleCategoryClick = (data) => { 
+  selectedCategoryId.value = data.id 
+  fetchNotesByCategory(data.id) 
+}
 
-// ========== 笔记操作 ==========
+// 获取笔记（含子分类）
 const fetchNotesByCategory = async (categoryId) => {
   notesLoading.value = true
   try {
-    const response = await axios.get(`${API_BASE}/category/${categoryId}`)
+    // 使用包含子分类的API
+    const response = await axios.get(`${API_BASE}/category/${categoryId}/with-children`)
     if (response.data && response.data.code === 200) { notes.value = response.data.data }
     else { ElMessage.error('获取笔记列表失败') }
   } catch (error) {
@@ -764,7 +818,15 @@ const fetchNotesByCategory = async (categoryId) => {
 }
 
 const searchNotes = async () => {
-  if (!searchKeyword.value.trim()) { fetchNotesByCategory(selectedCategoryId.value); return }
+  if (!searchKeyword.value.trim()) { 
+    // 无关键词时，根据是否选择分类加载对应笔记
+    if (selectedCategoryId.value) {
+      fetchNotesByCategory(selectedCategoryId.value)
+    } else {
+      loadAllNotes()
+    }
+    return 
+  }
   notesLoading.value = true
   try {
     const response = await axios.get(`${API_BASE}/search?keyword=${encodeURIComponent(searchKeyword.value)}`)
@@ -899,6 +961,36 @@ onMounted(() => { fetchCategories() })
 }
 .node-actions { opacity: 0; transition: opacity 0.2s; }
 .custom-tree-node:hover .node-actions { opacity: 1; }
+
+/* 分类搜索框 */
+.category-search {
+  padding: 8px 12px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+/* 全部笔记按钮 */
+.all-notes-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  cursor: pointer;
+  color: #606266;
+  font-size: 14px;
+  border-bottom: 1px solid #ebeef5;
+  transition: all 0.2s;
+}
+
+.all-notes-btn:hover {
+  background: #f5f7fa;
+  color: #409eff;
+}
+
+.all-notes-btn.active {
+  background: #ecf5ff;
+  color: #409eff;
+  font-weight: 500;
+}
 
 /* 笔记列 */
 .notes-col { flex: 1; min-width: 0; }

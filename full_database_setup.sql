@@ -89,13 +89,38 @@ CREATE TABLE IF NOT EXISTS note (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='笔记表';
 
 -- 初始化默认分类
-INSERT INTO note_category (name, parent_id, sort) VALUES
-('默认分类', 0, 1),
-('技术笔记', 0, 2),
-('生活随笔', 0, 3);
+INSERT INTO my_website.note_category (id, name, parent_id, sort, create_time, update_time) VALUES (1030, '拾人牙慧', 1018, 0, '2026-04-23 22:22:30', '2026-04-23 22:22:30');
+INSERT INTO my_website.note_category (id, name, parent_id, sort, create_time, update_time) VALUES (1002, '测试理论', 1001, 1, '2026-04-23 22:06:06', '2026-04-23 22:06:06');
+INSERT INTO my_website.note_category (id, name, parent_id, sort, create_time, update_time) VALUES (1019, 'Java', 1029, 1, '2026-04-23 22:06:06', '2026-04-23 22:16:55');
+INSERT INTO my_website.note_category (id, name, parent_id, sort, create_time, update_time) VALUES (1017, '方法论', 1018, 1, '2026-04-23 22:06:06', '2026-04-23 22:14:48');
+INSERT INTO my_website.note_category (id, name, parent_id, sort, create_time, update_time) VALUES (1014, 'AI前沿', 1028, 1, '2026-04-23 22:06:06', '2026-04-23 22:16:14');
+INSERT INTO my_website.note_category (id, name, parent_id, sort, create_time, update_time) VALUES (1007, '接口自动化', 1027, 1, '2026-04-23 22:06:06', '2026-04-23 22:11:57');
+INSERT INTO my_website.note_category (id, name, parent_id, sort, create_time, update_time) VALUES (1001, '测试基础', 0, 1, '2026-04-23 22:06:06', '2026-04-23 22:06:06');
+INSERT INTO my_website.note_category (id, name, parent_id, sort, create_time, update_time) VALUES (1003, '数据库', 1001, 2, '2026-04-23 22:06:06', '2026-04-23 22:06:06');
+INSERT INTO my_website.note_category (id, name, parent_id, sort, create_time, update_time) VALUES (1027, '进阶技能', 0, 2, '2026-04-23 22:10:58', '2026-04-23 22:13:02');
+INSERT INTO my_website.note_category (id, name, parent_id, sort, create_time, update_time) VALUES (1020, 'Python', 1029, 2, '2026-04-23 22:06:06', '2026-04-23 22:17:01');
+INSERT INTO my_website.note_category (id, name, parent_id, sort, create_time, update_time) VALUES (1015, '测试交流', 1028, 2, '2026-04-23 22:06:06', '2026-04-23 22:19:45');
+INSERT INTO my_website.note_category (id, name, parent_id, sort, create_time, update_time) VALUES (1008, 'UI自动化', 1027, 2, '2026-04-23 22:06:06', '2026-04-23 22:12:03');
+INSERT INTO my_website.note_category (id, name, parent_id, sort, create_time, update_time) VALUES (1028, '行业动态', 0, 3, '2026-04-23 22:15:47', '2026-04-23 22:20:13');
+INSERT INTO my_website.note_category (id, name, parent_id, sort, create_time, update_time) VALUES (1009, '中间件', 1027, 3, '2026-04-23 22:06:06', '2026-04-23 22:12:12');
+INSERT INTO my_website.note_category (id, name, parent_id, sort, create_time, update_time) VALUES (1004, '环境搭建', 1001, 3, '2026-04-23 22:06:06', '2026-04-23 22:06:06');
+INSERT INTO my_website.note_category (id, name, parent_id, sort, create_time, update_time) VALUES (1021, 'sql', 1029, 3, '2026-04-23 22:06:06', '2026-04-23 22:21:03');
+INSERT INTO my_website.note_category (id, name, parent_id, sort, create_time, update_time) VALUES (1022, 'Liunx', 1029, 4, '2026-04-23 22:06:06', '2026-04-23 22:21:10');
+INSERT INTO my_website.note_category (id, name, parent_id, sort, create_time, update_time) VALUES (1010, '前端项目', 1027, 4, '2026-04-23 22:06:06', '2026-04-23 22:12:28');
+INSERT INTO my_website.note_category (id, name, parent_id, sort, create_time, update_time) VALUES (1018, '个人随笔', 0, 4, '2026-04-23 22:06:06', '2026-04-23 22:20:18');
+INSERT INTO my_website.note_category (id, name, parent_id, sort, create_time, update_time) VALUES (1005, '工具使用', 1001, 4, '2026-04-23 22:06:06', '2026-04-23 22:06:06');
+INSERT INTO my_website.note_category (id, name, parent_id, sort, create_time, update_time) VALUES (1006, '实战总结', 1001, 5, '2026-04-23 22:06:06', '2026-04-23 22:06:06');
+INSERT INTO my_website.note_category (id, name, parent_id, sort, create_time, update_time) VALUES (1023, 'Vue', 1029, 5, '2026-04-23 22:06:06', '2026-04-23 22:17:32');
+INSERT INTO my_website.note_category (id, name, parent_id, sort, create_time, update_time) VALUES (1011, 'Java项目', 1027, 5, '2026-04-23 22:06:06', '2026-04-23 22:11:35');
+INSERT INTO my_website.note_category (id, name, parent_id, sort, create_time, update_time) VALUES (1029, '知识总结', 0, 5, '2026-04-23 22:16:49', '2026-04-23 22:21:27');
+INSERT INTO my_website.note_category (id, name, parent_id, sort, create_time, update_time) VALUES (1012, 'Python项目', 1027, 6, '2026-04-23 22:06:06', '2026-04-23 22:12:47');
+INSERT INTO my_website.note_category (id, name, parent_id, sort, create_time, update_time) VALUES (1024, 'Git', 1029, 6, '2026-04-23 22:06:06', '2026-04-23 22:17:43');
+INSERT INTO my_website.note_category (id, name, parent_id, sort, create_time, update_time) VALUES (1025, 'Docker', 1029, 7, '2026-04-23 22:06:06', '2026-04-23 22:17:53');
+INSERT INTO my_website.note_category (id, name, parent_id, sort, create_time, update_time) VALUES (1013, '测试平台', 1027, 7, '2026-04-23 22:06:06', '2026-04-23 22:14:24');
+INSERT INTO my_website.note_category (id, name, parent_id, sort, create_time, update_time) VALUES (1026, 'Redis', 1029, 8, '2026-04-23 22:06:06', '2026-04-23 22:18:02');
 
--- 授权 root 用户可以从任意主机访问
-CREATE USER IF NOT EXISTS 'root'@'%' IDENTIFIED BY 'root';
-GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;
-ALTER USER 'root'@'%' IDENTIFIED WITH mysql_native_password BY 'root';
-FLUSH PRIVILEGES;
+# -- 授权 root 用户可以从任意主机访问
+# CREATE USER IF NOT EXISTS 'root'@'%' IDENTIFIED BY 'root';
+# GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;
+# ALTER USER 'root'@'%' IDENTIFIED WITH mysql_native_password BY 'root';
+# FLUSH PRIVILEGES;
