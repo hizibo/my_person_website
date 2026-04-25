@@ -36,11 +36,14 @@ services:
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
       JAVA_OPTS: "-Xmx256m -Xms128m"
+      PYTHON_XMIND_URL: http://xmind-service:8001/parse-xmind-base64
     volumes:
       - uploads_data:/uploads
     depends_on:
       mysql:
         condition: service_healthy
+      xmind-service:
+        condition: service_started
 
   # Python XMind 解析服务
   xmind-service:
