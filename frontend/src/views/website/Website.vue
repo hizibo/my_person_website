@@ -19,7 +19,8 @@
     </div>
 
     <!-- 数据表格 -->
-    <el-table :data="tableData" v-loading="loading" stripe border style="margin-top: 20px" @row-dblclick="viewWebsite">
+    <!-- PC端完整表格 -->
+    <el-table v-if="!isMobile" :data="tableData" v-loading="loading" stripe border style="margin-top: 20px" @row-dblclick="viewWebsite">
       <el-table-column prop="name" label="网站名称" width="180" />
       <el-table-column prop="url" label="网站地址" width="250">
         <template #default="{ row }">
@@ -89,6 +90,24 @@
         </template>
       </el-table-column>
     </el-table>
+    <!-- H5端精简卡片列表 -->
+    <div v-else class="mobile-website-list" v-loading="loading">
+      <div v-for="site in tableData" :key="site.id" class="mobile-website-card" @click="viewWebsite(site)">
+        <div class="mobile-website-name">{{ site.name }}</div>
+        <div class="mobile-website-url">
+          <a :href="site.url" target="_blank" @click.stop style="color: #409eff;">{{ site.url }}</a>
+          <el-button
+            type="text"
+            size="small"
+            class="copy-btn"
+            @click.stop="copyToClipboard(site.url, '地址')"
+          >
+            <el-icon><document-copy /></el-icon>
+          </el-button>
+        </div>
+      </div>
+      <el-empty v-if="!loading && tableData.length === 0" description="暂无网站" />
+    </div>
 
     <!-- 添加/编辑弹窗 -->
     <el-dialog
@@ -199,10 +218,23 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, computed } from 'vue'
 import { Search, Plus, DocumentCopy, Edit } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
+
+// H5端检测
+const isMobile = ref(false)
+const checkMobile = () => {
+  isMobile.value = window.innerWidth <= 768
+}
+onMounted(() => {
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
+})
+onUnmounted(() => {
+  window.removeEventListener('resize', checkMobile)
+})
 
 // 表格数据
 const tableData = ref([])
@@ -536,5 +568,52 @@ onMounted(() => {
   min-height: 80px;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+/* ========== H5端卡片样式 ========== */
+.mobile-website-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.mobile-website-card {
+  background: #fff;
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mobile-website-card:hover {
+  border-color: #409eff;
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.15);
+}
+
+.mobile-website-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #303133;
+  margin-bottom: 6px;
+}
+
+.mobile-website-url {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mobile-website-url a {
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.mobile-website-url .copy-btn {
+  flex-shrink: 0;
 }
 </style>

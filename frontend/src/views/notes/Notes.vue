@@ -82,7 +82,8 @@
               </div>
             </div>
             <div class="table-wrapper">
-              <el-table :data="notes" border style="width: 100%" v-loading="notesLoading" @row-dblclick="viewNote" size="small">
+              <!-- PC端完整表格 -->
+              <el-table v-if="!isMobile" :data="notes" border style="width: 100%" v-loading="notesLoading" @row-dblclick="viewNote" size="small">
                 <el-table-column prop="id" label="ID" width="60" />
                 <el-table-column prop="title" label="标题" min-width="120" />
                 <el-table-column prop="summary" label="摘要" min-width="150" show-overflow-tooltip />
@@ -98,6 +99,15 @@
                   </template>
                 </el-table-column>
               </el-table>
+              <!-- H5端精简卡片列表 -->
+              <div v-else class="mobile-notes-list" v-loading="notesLoading">
+                <div v-for="note in notes" :key="note.id" class="mobile-note-card" @click="viewNote(note)">
+                  <div class="mobile-note-title">{{ note.title }}</div>
+                  <div class="mobile-note-summary" v-if="note.summary">{{ note.summary }}</div>
+                  <div class="mobile-note-summary" v-else style="color: #999;">暂无摘要</div>
+                </div>
+                <el-empty v-if="!notesLoading && notes.length === 0" description="暂无笔记" />
+              </div>
             </div>
           </div>
 
@@ -242,7 +252,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, computed } from 'vue'
 import {
   Plus, Edit, Delete, Search, InfoFilled, Expand, Fold,
   ArrowDown, ArrowRight, ArrowLeft, ArrowUp, Finished, WarnTriangleFilled,
@@ -256,6 +266,19 @@ import axios from 'axios'
 
 const API_BASE = '/api/note'
 const CATEGORY_API = '/api/note/category'
+
+// H5端检测
+const isMobile = ref(false)
+const checkMobile = () => {
+  isMobile.value = window.innerWidth <= 768
+}
+onMounted(() => {
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
+})
+onUnmounted(() => {
+  window.removeEventListener('resize', checkMobile)
+})
 
 // ========== Bug 2 & 3 修复：marked v18 正确配置 ==========
 // marked v18+ 使用 Extensions 机制，不再支持 setOptions.highlight
@@ -1184,5 +1207,47 @@ onMounted(() => { fetchCategories() })
 @media screen and (max-width: 480px) {
   .md-textarea { height: 220px; }
   .md-preview { height: 220px; }
+}
+
+/* ========== H5端卡片样式 ========== */
+.mobile-notes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mobile-note-card {
+  background: #fff;
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mobile-note-card:hover {
+  border-color: #409eff;
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.15);
+}
+
+.mobile-note-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #303133;
+  margin-bottom: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobile-note-summary {
+  font-size: 12px;
+  color: #909399;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-height: 1.5;
 }
 </style>

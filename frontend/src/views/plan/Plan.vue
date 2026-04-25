@@ -35,7 +35,8 @@
     <!-- 计划列表 -->
     <div class="plan-list">
       <div class="table-wrapper">
-        <el-table :data="plans" style="width: 100%" border v-loading="loading" size="small" @row-dblclick="viewPlan" :row-class-name="planRowClass">
+        <!-- PC端完整表格 -->
+        <el-table v-if="!isMobile" :data="plans" style="width: 100%" border v-loading="loading" size="small" @row-dblclick="viewPlan" :row-class-name="planRowClass">
           <el-table-column prop="sort" label="排序" width="70" align="center" />
           <el-table-column prop="title" label="标题" min-width="140">
             <template #default="{ row }">
@@ -69,6 +70,22 @@
             </template>
           </el-table-column>
         </el-table>
+        <!-- H5端精简卡片列表 -->
+        <div v-else class="mobile-plan-list" v-loading="loading">
+          <div v-for="plan in plans" :key="plan.id" class="mobile-plan-card" @click="viewPlan(plan)">
+            <div class="mobile-plan-header">
+              <span class="mobile-plan-title">{{ plan.title }}</span>
+              <span class="mobile-plan-progress" :style="{ color: progressColor(plan.progress) }">{{ plan.progress }}%</span>
+            </div>
+            <el-progress
+              :percentage="plan.progress"
+              :stroke-width="6"
+              :show-text="false"
+              :color="progressColor(plan.progress)"
+            />
+          </div>
+          <el-empty v-if="!loading && plans.length === 0" description="暂无计划" />
+        </div>
       </div>
     </div>
 
@@ -142,12 +159,25 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, computed } from 'vue'
 import { Plus, Edit, Delete, Search, InfoFilled } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
 
 const API_BASE = '/api/plan'
+
+// H5端检测
+const isMobile = ref(false)
+const checkMobile = () => {
+  isMobile.value = window.innerWidth <= 768
+}
+onMounted(() => {
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
+})
+onUnmounted(() => {
+  window.removeEventListener('resize', checkMobile)
+})
 
 const plans = ref([])
 const loading = ref(false)
@@ -480,5 +510,50 @@ onMounted(() => { fetchPlans() })
   .plan-list .el-table {
     font-size: 12px;
   }
+}
+
+/* ========== H5端卡片样式 ========== */
+.mobile-plan-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mobile-plan-card {
+  background: #fff;
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mobile-plan-card:hover {
+  border-color: #409eff;
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.15);
+}
+
+.mobile-plan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.mobile-plan-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #303133;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  margin-right: 12px;
+}
+
+.mobile-plan-progress {
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
 }
 </style>
