@@ -81,14 +81,14 @@
           <!-- 笔记列表 -->
           <div v-if="!showEditor" class="notes-list">
             <div class="notes-header">
-              <span class="notes-header-title">{{ selectedCategoryName }} ({{ notes.length }})</span>
+              <span class="notes-header-title">{{ selectedCategoryName }} ({{ totalNotes }})</span>
               <div class="header-actions">
-                <el-input v-model="searchKeyword" placeholder="搜索..." style="width: 150px; margin-right: 8px;" clearable @keyup.enter="searchNotes" @clear="searchNotes">
+                <el-input v-model="searchKeyword" placeholder="搜索..." style="width: 150px; margin-right: 8px;" clearable @keyup.enter="currentPage = 1; searchNotes()" @clear="currentPage = 1; searchNotes()">
                   <template #prefix>
                     <el-icon><Search /></el-icon>
                   </template>
                 </el-input>
-                <el-button type="primary" @click="searchNotes" :icon="Search" size="small" class="action-btn">搜索</el-button>
+                <el-button type="primary" @click="currentPage = 1; searchNotes()" :icon="Search" size="small" class="action-btn">搜索</el-button>
                 <el-button type="primary" @click="createNewNote" :icon="Plus" size="small" class="action-btn">新建</el-button>
               </div>
             </div>
@@ -110,6 +110,19 @@
                   </div>
                 </div>
                 <el-empty v-if="!notesLoading && notes.length === 0" description="暂无笔记" />
+              </div>
+              <!-- 分页 -->
+              <div class="pagination-wrapper" v-if="totalNotes > 0">
+                <el-pagination
+                  v-model:current-page="currentPage"
+                  v-model:page-size="pageSize"
+                  :page-sizes="[10, 20, 50]"
+                  :total="totalNotes"
+                  layout="total, sizes, prev, pager, next, jumper"
+                  background
+                  @size-change="handleSizeChange"
+                  @current-change="handlePageChange"
+                />
               </div>
             </div>
           </div>
@@ -394,10 +407,12 @@ const loadAllNotes = async () => {
   selectedCategoryId.value = null
   notesLoading.value = true
   try {
-    const response = await axios.get(`${API_BASE}/list`)
-    if (response.data && response.data.code === 200) { notes.value = response.data.data }
-    else { ElMessage.error('获取笔记列表失败') }
-  } catch (error) {
+    const response = await axios.get(`${API_BASE}/list`, { params: { page: currentPage.value, size: pageSize.value } })
+    if (response.data && response.data.code === 200) {
+      notes.value = response.data.data.records
+      totalNotes.value = response.data.data.total
+    } else { ElMessage.error('获取笔记列表失败') }
+    } catch (error) {
     console.error('获取笔记列表失败:', error); ElMessage.error('获取笔记列表失败')
   } finally {
     notesLoading.value = false
@@ -420,6 +435,11 @@ const categoryForm = reactive({ name: '', parentId: 0, sort: 0 })
 const notes = ref([])
 const notesLoading = ref(false)
 const searchKeyword = ref('')
+
+// 分页
+const currentPage = ref(1)
+const pageSize = ref(10)
+const totalNotes = ref(0)
 
 // Markdown 编辑器
 const showEditor = ref(false)
@@ -710,6 +730,7 @@ const fetchCategories = async () => {
       defaultExpandedKeys.value = getAllNodeKeys()
       // 默认加载全部笔记，不自动选择第一个分类
       if (!selectedCategoryId.value) {
+        currentPage.value = 1
         loadAllNotes()
       }
     } else {
@@ -797,20 +818,22 @@ const deleteCategory = async (data) => {
   }
 }
 
-const handleCategoryClick = (data) => { 
-  selectedCategoryId.value = data.id 
-  fetchNotesByCategory(data.id) 
+const handleCategoryClick = (data) => {
+  selectedCategoryId.value = data.id
+  currentPage.value = 1
+  fetchNotesByCategory(data.id)
 }
 
 // 获取笔记（含子分类）
 const fetchNotesByCategory = async (categoryId) => {
   notesLoading.value = true
   try {
-    // 使用包含子分类的API
-    const response = await axios.get(`${API_BASE}/category/${categoryId}/with-children`)
-    if (response.data && response.data.code === 200) { notes.value = response.data.data }
-    else { ElMessage.error('获取笔记列表失败') }
-  } catch (error) {
+    const response = await axios.get(`${API_BASE}/category/${categoryId}/with-children`, { params: { page: currentPage.value, size: pageSize.value } })
+    if (response.data && response.data.code === 200) {
+      notes.value = response.data.data.records
+      totalNotes.value = response.data.data.total
+    } else { ElMessage.error('获取笔记列表失败') }
+    } catch (error) {
     console.error('获取笔记列表失败:', error); ElMessage.error('获取笔记列表失败')
   } finally {
     notesLoading.value = false
@@ -818,23 +841,24 @@ const fetchNotesByCategory = async (categoryId) => {
 }
 
 const searchNotes = async () => {
-  if (!searchKeyword.value.trim()) { 
-    // 无关键词时，根据是否选择分类加载对应笔记
+  if (!searchKeyword.value.trim()) {
     if (selectedCategoryId.value) {
       fetchNotesByCategory(selectedCategoryId.value)
     } else {
       loadAllNotes()
     }
-    return 
+    return
   }
   notesLoading.value = true
   try {
-    const response = await axios.get(`${API_BASE}/search?keyword=${encodeURIComponent(searchKeyword.value)}`)
-    if (response.data && response.data.code === 200) { notes.value = response.data.data }
-    else { ElMessage.error('搜索失败') }
-  } catch (error) {
+    const response = await axios.get(`${API_BASE}/search`, { params: { keyword: searchKeyword.value, page: currentPage.value, size: pageSize.value } })
+    if (response.data && response.data.code === 200) {
+      notes.value = response.data.data.records
+      totalNotes.value = response.data.data.total
+    } else { ElMessage.error('搜索失败') }
+    } catch (error) {
     console.error('搜索笔记失败:', error); ElMessage.error('搜索失败')
-  } finally {
+    } finally {
     notesLoading.value = false
   }
 }
@@ -847,6 +871,29 @@ const createNewNote = () => {
   noteForm.summary = ''
   noteForm.tags = ''
   showEditor.value = true
+}
+
+const handlePageChange = (page) => {
+  currentPage.value = page
+  if (searchKeyword.value.trim()) {
+    searchNotes()
+  } else if (selectedCategoryId.value) {
+    fetchNotesByCategory(selectedCategoryId.value)
+  } else {
+    loadAllNotes()
+  }
+}
+
+const handleSizeChange = (size) => {
+  pageSize.value = size
+  currentPage.value = 1
+  if (searchKeyword.value.trim()) {
+    searchNotes()
+  } else if (selectedCategoryId.value) {
+    fetchNotesByCategory(selectedCategoryId.value)
+  } else {
+    loadAllNotes()
+  }
 }
 
 const editNote = async (row) => {
@@ -893,7 +940,11 @@ const saveNote = async () => {
     if (response.data && response.data.code === 200) {
       ElMessage.success(editingNoteId.value ? '更新成功' : '添加成功')
       showEditor.value = false
-      await fetchNotesByCategory(selectedCategoryId.value)
+      if (selectedCategoryId.value) {
+        fetchNotesByCategory(selectedCategoryId.value)
+      } else {
+        loadAllNotes()
+      }
     } else { ElMessage.error(response.data.msg || '保存失败') }
   } catch (error) { console.error('保存笔记失败:', error); ElMessage.error('保存失败') }
   finally { savingNote.value = false }
@@ -905,7 +956,7 @@ const deleteNote = async (id) => {
   try {
     await ElMessageBox.confirm('确定删除该笔记吗？', '提示', { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' })
     const response = await axios.delete(`${API_BASE}/delete/${id}`)
-    if (response.data && response.data.code === 200) { ElMessage.success('删除成功'); await fetchNotesByCategory(selectedCategoryId.value) }
+    if (response.data && response.data.code === 200) { ElMessage.success('删除成功'); if (selectedCategoryId.value) { fetchNotesByCategory(selectedCategoryId.value) } else { loadAllNotes() } }
     else { ElMessage.error(response.data.msg || '删除失败') }
   } catch (error) { if (error !== 'cancel') { console.error('删除笔记失败:', error); ElMessage.error('删除失败') } }
 }
@@ -1503,6 +1554,26 @@ onMounted(() => { fetchCategories() })
   }
   .note-card-date {
     font-size: 11px;
+  }
+}
+
+/* 分页样式 */
+.pagination-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 16px 0 4px;
+  flex-shrink: 0;
+}
+
+@media screen and (max-width: 768px) {
+  .pagination-wrapper {
+    padding: 12px 0 4px;
+  }
+  .pagination-wrapper :deep(.el-pagination__sizes) {
+    display: none;
+  }
+  .pagination-wrapper :deep(.el-pagination__jump) {
+    display: none;
   }
 }
 </style>

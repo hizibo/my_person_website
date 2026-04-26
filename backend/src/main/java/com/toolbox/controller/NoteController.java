@@ -1,5 +1,7 @@
 package com.toolbox.controller;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.toolbox.common.PageResult;
 import com.toolbox.common.Result;
 import com.toolbox.entity.Note;
 import com.toolbox.service.NoteService;
@@ -19,31 +21,42 @@ public class NoteController {
     private NoteService noteService;
 
     @GetMapping("/list")
-    @Operation(summary = "获取所有笔记")
-    public Result<List<Note>> list() {
-        List<Note> notes = noteService.getAllNotes();
-        return Result.success(notes);
+    @Operation(summary = "获取所有笔记（分页）")
+    public Result<PageResult<Note>> list(
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size) {
+        PageResult<Note> result = noteService.getAllNotes(page, size);
+        return Result.success(result);
     }
 
     @GetMapping("/category/{categoryId}")
-    @Operation(summary = "根据分类ID获取笔记")
-    public Result<List<Note>> listByCategory(@PathVariable Long categoryId) {
-        List<Note> notes = noteService.getNotesByCategoryId(categoryId);
-        return Result.success(notes);
+    @Operation(summary = "根据分类ID获取笔记（分页）")
+    public Result<PageResult<Note>> listByCategory(
+            @PathVariable Long categoryId,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size) {
+        PageResult<Note> result = noteService.getNotesByCategoryId(categoryId, page, size);
+        return Result.success(result);
     }
 
     @GetMapping("/category/{categoryId}/with-children")
-    @Operation(summary = "根据分类ID获取笔记（含子分类）")
-    public Result<List<Note>> listByCategoryWithChildren(@PathVariable Long categoryId) {
-        List<Note> notes = noteService.getNotesByCategoryIdWithChildren(categoryId);
-        return Result.success(notes);
+    @Operation(summary = "根据分类ID获取笔记（含子分类，分页）")
+    public Result<PageResult<Note>> listByCategoryWithChildren(
+            @PathVariable Long categoryId,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size) {
+        PageResult<Note> result = noteService.getNotesByCategoryIdWithChildren(categoryId, page, size);
+        return Result.success(result);
     }
 
     @GetMapping("/search")
-    @Operation(summary = "搜索笔记")
-    public Result<List<Note>> search(@RequestParam String keyword) {
-        List<Note> notes = noteService.searchNotes(keyword);
-        return Result.success(notes);
+    @Operation(summary = "搜索笔记（分页）")
+    public Result<PageResult<Note>> search(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size) {
+        PageResult<Note> result = noteService.searchNotes(keyword, page, size);
+        return Result.success(result);
     }
 
     @GetMapping("/detail/{id}")
