@@ -59,7 +59,18 @@ public class NoteCategoryController {
     @DeleteMapping("/delete/{id}")
     @Operation(summary = "删除分类")
     public Result<Boolean> delete(@PathVariable Long id) {
+        // 先检查是否有子分类
+        Long childCount = noteCategoryService.lambdaQuery()
+                .eq(NoteCategory::getParentId, id).count();
+        if (childCount > 0) {
+            return Result.error("该分类下存在子分类，无法删除");
+        }
+        // 检查是否有笔记
+        Long noteCount = noteCategoryService.getNoteCountByCategory(id);
+        if (noteCount > 0) {
+            return Result.error("该分类下存在笔记，无法删除");
+        }
         boolean success = noteCategoryService.deleteCategory(id);
-        return success ? Result.success(true) : Result.error("删除失败（存在子分类或笔记）");
+        return success ? Result.success(true) : Result.error("删除失败");
     }
 }

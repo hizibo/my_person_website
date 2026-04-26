@@ -93,29 +93,21 @@
               </div>
             </div>
             <div class="table-wrapper">
-              <!-- PC端完整表格 -->
-              <el-table v-if="!isMobile" :data="notes" border style="width: 100%" v-loading="notesLoading" @row-dblclick="viewNote" size="small">
-                <el-table-column prop="id" label="ID" width="60" />
-                <el-table-column prop="title" label="标题" min-width="120" />
-                <el-table-column prop="summary" label="摘要" min-width="150" show-overflow-tooltip />
-                <el-table-column prop="createTime" label="创建时间" width="150">
-                  <template #default="{ row }">
-                    {{ formatDate(row.createTime) }}
-                  </template>
-                </el-table-column>
-                <el-table-column label="操作" width="140" fixed="right">
-                  <template #default="{ row }">
-                    <el-button size="small" @click="editNote(row)" :icon="Edit">编辑</el-button>
-                    <el-button size="small" type="danger" @click="deleteNote(row.id)" :icon="Delete">删除</el-button>
-                  </template>
-                </el-table-column>
-              </el-table>
-              <!-- H5端精简卡片列表 -->
-              <div v-else class="mobile-notes-list" v-loading="notesLoading">
-                <div v-for="note in notes" :key="note.id" class="mobile-note-card" @click="viewNote(note)">
-                  <div class="mobile-note-title">{{ note.title }}</div>
-                  <div class="mobile-note-summary" v-if="note.summary">{{ note.summary }}</div>
-                  <div class="mobile-note-summary" v-else style="color: #999;">暂无摘要</div>
+              <!-- 统一卡片列表（PC + H5） -->
+              <div class="notes-card-list" v-loading="notesLoading">
+                <div v-for="note in notes" :key="note.id" class="note-card" @dblclick="viewNote(note)">
+                  <div class="note-card-main">
+                    <div class="note-card-title-row">
+                      <span class="note-card-title" @click="viewNote(note)">{{ note.title }}</span>
+                      <span class="note-card-date">{{ formatDate(note.createTime) }}</span>
+                    </div>
+                    <div class="note-card-summary" v-if="note.summary">{{ note.summary }}</div>
+                    <div class="note-card-summary note-card-empty" v-else>暂无摘要</div>
+                  </div>
+                  <div class="note-card-actions">
+                    <el-button size="small" text type="primary" @click="editNote(note)" :icon="Edit" />
+                    <el-button size="small" text type="danger" @click="deleteNote(note.id)" :icon="Delete" />
+                  </div>
                 </div>
                 <el-empty v-if="!notesLoading && notes.length === 0" description="暂无笔记" />
               </div>
@@ -281,7 +273,7 @@ import html2canvas from 'html2canvas'
 const API_BASE = '/api/note'
 const CATEGORY_API = '/api/note/category'
 
-// H5端检测
+// H5端检测（保留用于响应式样式调整）
 const isMobile = ref(false)
 const checkMobile = () => {
   isMobile.value = window.innerWidth <= 768
@@ -793,8 +785,13 @@ const deleteCategory = async (data) => {
   try {
     await ElMessageBox.confirm(`确定删除分类 "${data.name}" 吗？`, '提示', { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' })
     const response = await axios.delete(`${CATEGORY_API}/delete/${data.id}`)
-    if (response.data && response.data.code === 200) { ElMessage.success('删除成功'); await fetchCategories() }
-    else { ElMessage.error(response.data.msg || '删除失败') }
+    if (response.data && response.data.code === 200) { 
+      ElMessage.success('删除成功'); 
+      await fetchCategories() 
+    } else { 
+      const msg = response.data.msg || response.data.message || '删除失败'
+      ElMessage.warning(msg)
+    }
   } catch (error) {
     if (error !== 'cancel') { console.error('删除分类失败:', error); ElMessage.error('删除失败') }
   }
@@ -947,16 +944,27 @@ const exportNotePdf = async () => {
     const imgH = canvas.height
     const ratio = pageW / imgW
     const scaledH = imgH * ratio
-    let y = 0
-    let remaining = scaledH
-    while (remaining > 0) {
-      if (y > 0) { pdf.addPage(); y = 0 }
-      const availH = pageH - 60
-      const sliceH = Math.min(availH, remaining)
-      const sliceImgH = sliceH / ratio
-      pdf.addImage(imgData, 'JPEG', 0, 60 - y, pageW, scaledH, undefined, 'FAST')
-      y += sliceH
-      remaining -= sliceH
+    const margin = 40
+    const usableH = pageH - margin * 2
+    let currentY = 0
+    let page = 0
+    while (currentY < scaledH) {
+      if (page > 0) pdf.addPage()
+      // 计算本页需要截取的高度（canvas 像素）
+      const sliceCanvasH = Math.min(usableH / ratio, imgH - currentY / ratio)
+      // 创建本页的截取 canvas
+      const sliceCanvas = document.createElement('canvas')
+      sliceCanvas.width = imgW
+      sliceCanvas.height = sliceCanvasH
+      const sliceCtx = sliceCanvas.getContext('2d')
+      sliceCtx.fillStyle = '#ffffff'
+      sliceCtx.fillRect(0, 0, imgW, sliceCanvasH)
+      // 从源 canvas 截取对应区域
+      sliceCtx.drawImage(canvas, 0, currentY / ratio, imgW, sliceCanvasH, 0, 0, imgW, sliceCanvasH)
+      const sliceData = sliceCanvas.toDataURL('image/jpeg', 0.95)
+      pdf.addImage(sliceData, 'JPEG', 0, margin, pageW, sliceCanvasH * ratio)
+      currentY += sliceCanvasH * ratio
+      page++
     }
     const safeTitle = (viewForm.value.title || '笔记').replace(/[/\\:*?"<>|]/g, '_')
     pdf.save(`${safeTitle}.pdf`)
@@ -1360,45 +1368,141 @@ onMounted(() => { fetchCategories() })
   .md-preview { height: 220px; }
 }
 
-/* ========== H5端卡片样式 ========== */
-.mobile-notes-list {
+/* ========== 笔记卡片列表样式 ========== */
+.notes-card-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
-.mobile-note-card {
+.note-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
   background: #fff;
-  border: 1px solid #e4e7ed;
-  border-radius: 8px;
-  padding: 12px 14px;
+  border: 1px solid #ebeef5;
+  border-radius: 10px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.25s ease;
+  gap: 12px;
 }
 
-.mobile-note-card:hover {
+.note-card:hover {
   border-color: #409eff;
-  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.15);
+  box-shadow: 0 2px 12px rgba(64, 158, 255, 0.12);
+  transform: translateY(-1px);
 }
 
-.mobile-note-title {
-  font-size: 14px;
+.note-card-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.note-card-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.note-card-title {
+  font-size: 15px;
   font-weight: 500;
   color: #303133;
-  margin-bottom: 6px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.2s;
 }
 
-.mobile-note-summary {
+.note-card-title:hover {
+  color: #409eff;
+}
+
+.note-card-date {
   font-size: 12px;
   color: #909399;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.note-card-summary {
+  font-size: 13px;
+  color: #909399;
+  line-height: 1.5;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
-  line-height: 1.5;
+}
+
+.note-card-empty {
+  font-style: italic;
+  color: #c0c4cc;
+}
+
+.note-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.note-card:hover .note-card-actions {
+  opacity: 1;
+}
+
+/* 深色主题卡片适配 */
+[data-theme="dark"] .note-card {
+  background: #16213e;
+  border-color: #2a2a4a;
+}
+
+[data-theme="dark"] .note-card:hover {
+  border-color: #409eff;
+  box-shadow: 0 2px 12px rgba(64, 158, 255, 0.2);
+}
+
+[data-theme="dark"] .note-card-title {
+  color: #e8e8e8;
+}
+
+[data-theme="dark"] .note-card-title:hover {
+  color: #409eff;
+}
+
+[data-theme="dark"] .note-card-summary {
+  color: #8b949e;
+}
+
+[data-theme="dark"] .note-card-date {
+  color: #6e7681;
+}
+
+/* H5端卡片调整 */
+@media screen and (max-width: 768px) {
+  .note-card {
+    padding: 12px 14px;
+    border-radius: 8px;
+  }
+  .note-card-title {
+    font-size: 14px;
+  }
+  .note-card-summary {
+    font-size: 12px;
+  -webkit-line-clamp: 2;
+  }
+  .note-card-actions {
+    opacity: 1; /* H5端始终显示操作按钮 */
+  }
+  .note-card-date {
+    font-size: 11px;
+  }
 }
 </style>

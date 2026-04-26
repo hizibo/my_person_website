@@ -39,19 +39,25 @@
             <span class="nav-text">工具</span>
           </router-link>
         </nav>
-        <!-- 主题切换 -->
-        <div class="theme-toggle">
-          <el-tooltip :content="themeDark ? '切换亮色模式' : '切换深色模式'" placement="right">
-            <div class="theme-btn" @click="toggleTheme">
-              <el-icon :size="20"><Sunny v-if="themeDark" /><Moon v-else /></el-icon>
-              <span>{{ themeDark ? '亮色模式' : '深色模式' }}</span>
-            </div>
-          </el-tooltip>
-        </div>
         <!-- 登录状态指示 -->
         <div class="auth-status" v-if="isLoggedIn">
           <span class="auth-user">👤 {{ username }}</span>
-          <span class="auth-logout" @click="handleLogout">退出</span>
+          <div class="auth-actions">
+            <span class="theme-action" @click="toggleTheme" :title="themeDark ? '切换亮色模式' : '切换深色模式'">
+              <el-icon :size="16"><Sunny v-if="themeDark" /><Moon v-else /></el-icon>
+              <span>{{ themeDark ? '亮色' : '深色' }}</span>
+            </span>
+            <span class="auth-logout" @click="handleLogout">退出</span>
+          </div>
+        </div>
+        <!-- 未登录时也显示主题切换 -->
+        <div class="auth-status" v-if="!isLoggedIn">
+          <div class="auth-actions" style="width: 100%; justify-content: center;">
+            <span class="theme-action" @click="toggleTheme" :title="themeDark ? '切换亮色模式' : '切换深色模式'">
+              <el-icon :size="16"><Sunny v-if="themeDark" /><Moon v-else /></el-icon>
+              <span>{{ themeDark ? '亮色模式' : '深色模式' }}</span>
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -284,6 +290,26 @@ const handleLogout = () => {
   color: #bdc3c7;
 }
 
+.auth-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.theme-action {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #bdc3c7;
+  cursor: pointer;
+  transition: color 0.2s;
+  font-size: 13px;
+}
+
+.theme-action:hover {
+  color: white;
+}
+
 .auth-logout {
   color: #e74c3c;
   cursor: pointer;
@@ -292,29 +318,6 @@ const handleLogout = () => {
 
 .auth-logout:hover {
   color: #ff6b6b;
-}
-
-/* ========== 主题切换按钮 ========== */
-.theme-toggle {
-  margin-top: 8px;
-  padding: 8px 16px;
-}
-
-.theme-btn {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: #bdc3c7;
-  cursor: pointer;
-  padding: 10px 12px;
-  border-radius: 8px;
-  font-size: 14px;
-  transition: all 0.3s ease;
-}
-
-.theme-btn:hover {
-  background-color: #34495e;
-  color: white;
 }
 
 /* ========== 深色主题 CSS 变量 ========== */
@@ -355,12 +358,11 @@ const handleLogout = () => {
   border-top-color: #2a2a4a;
 }
 
-[data-theme="dark"] .sidebar .theme-btn {
+[data-theme="dark"] .sidebar .theme-action {
   color: #a0a0a0;
 }
 
-[data-theme="dark"] .theme-btn:hover {
-  background-color: #0f3460;
+[data-theme="dark"] .sidebar .theme-action:hover {
   color: white;
 }
 

@@ -89,8 +89,25 @@ public class NoteCategoryService extends ServiceImpl<NoteCategoryMapper, NoteCat
         if (childCount > 0) {
             return false; // 存在子分类，不能删除
         }
-        // TODO: 检查是否有笔记属于该分类
+        // 检查是否有笔记属于该分类
+        Long noteCount = noteMapper.selectCount(
+                new LambdaQueryWrapper<Note>()
+                        .eq(Note::getCategoryId, id)
+        );
+        if (noteCount > 0) {
+            return false; // 存在笔记，不能删除
+        }
         return this.removeById(id);
+    }
+
+    /**
+     * 获取指定分类下的笔记数量
+     */
+    public Long getNoteCountByCategory(Long categoryId) {
+        return noteMapper.selectCount(
+                new LambdaQueryWrapper<Note>()
+                        .eq(Note::getCategoryId, categoryId)
+        );
     }
 
     /**
