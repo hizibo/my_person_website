@@ -1,23 +1,25 @@
 version: '3.8'
 
 services:
-  # MySQL 数据库（部署时保持不变，仅首次创建）
+  # MySQL 数据库（安全加固：不暴露公网端口，强密码，仅容器内访问）
   mysql:
     image: mysql:8.0
     container_name: website-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: Mw@2026!Xk9z#Rq
       MYSQL_DATABASE: my_website
       TZ: Asia/Shanghai
+    # ⚠️ 不再暴露 3306 到公网！只允许容器间通信
+    # 如需本地调试，临时改为 "127.0.0.1:3306:3306"
     ports:
-      - "3306:3306"
+      - "127.0.0.1:3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./backend/sql/init_database.sql:/docker-entrypoint-initdb.d/init.sql
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --bind-address=0.0.0.0 --skip-slave-start
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pMw@2026!Xk9z#Rq"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -34,7 +36,7 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/my_website?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: root
+      SPRING_DATASOURCE_PASSWORD: Mw@2026!Xk9z#Rq
       JAVA_OPTS: "-Xmx256m -Xms128m"
     volumes:
       - uploads_data:/uploads
