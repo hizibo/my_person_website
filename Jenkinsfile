@@ -144,7 +144,7 @@ pipeline {
             echo '❌ 部署失败！请检查日志'
         }
         always {
-            cleanWs()
+            deleteDir()
         }
     }
 }
