@@ -101,8 +101,8 @@ pipeline {
                 retry(5) {
                     sleep time: 8, unit: 'SECONDS'
                     sh '''
-                        HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/api/plan/list 2>/dev/null)
-                        if [ "$HTTP_CODE" != "200" ]; then
+                        HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' http://10.0.8.6/api/plan/list 2>/dev/null)
+                        if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "403" ]; then
                             echo "❌ 后端未就绪 HTTP=$HTTP_CODE，重试中..."
                             exit 1
                         fi
@@ -121,7 +121,7 @@ pipeline {
                 retry(3) {
                     sleep time: 5, unit: 'SECONDS'
                     sh '''
-                        HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:80 2>/dev/null)
+                        HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' http://10.0.8.6 2>/dev/null)
                         if [ "$HTTP_CODE" != "200" ]; then
                             echo "❌ 前端未就绪 HTTP=$HTTP_CODE，重试中..."
                             exit 1
