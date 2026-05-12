@@ -83,13 +83,9 @@ pipeline {
 
                     echo "📦 重建服务: $SERVICES"
 
-                    # 停止需要重建的服务
-                    for svc in $SERVICES; do
-                        docker-compose stop $svc || true
-                    done
-
-                    # 增量构建 + 启动
-                    docker-compose up -d --build --force-recreate --remove-orphans $SERVICES
+                    # 先清理所有容器（含依赖），再重建
+                    docker-compose down --remove-orphans || true
+                    docker-compose up -d --build $SERVICES
                 '''
             }
         }
