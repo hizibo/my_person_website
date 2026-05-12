@@ -89,7 +89,7 @@ pipeline {
                     done
 
                     # 增量构建 + 启动
-                    docker-compose up -d --build $SERVICES
+                    docker-compose up -d --build --force-recreate --remove-orphans $SERVICES
                 '''
             }
         }
