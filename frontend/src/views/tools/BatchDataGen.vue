@@ -57,8 +57,31 @@
 
             <!-- 配置区域 -->
             <div class="col-config">
-              <!-- 固定值 -->
-              <el-input v-if="field.fill_mode === 'fixed'" v-model="field.fixed_value" placeholder="固定值" size="small" />
+              <!-- 固定值：日期/日期时间类型用选择器 -->
+              <el-date-picker
+                v-if="field.fill_mode === 'fixed' && field.data_type === 'date'"
+                v-model="field.fixed_value"
+                type="date"
+                value-format="YYYY-MM-DD"
+                placeholder="选择日期"
+                size="small"
+                class="fixed-date-picker"
+              />
+              <el-date-picker
+                v-else-if="field.fill_mode === 'fixed' && field.data_type === 'datetime'"
+                v-model="field.fixed_value"
+                type="datetime"
+                value-format="YYYY-MM-DD HH:mm:ss"
+                placeholder="选择日期时间"
+                size="small"
+                class="fixed-date-picker"
+              />
+              <el-input
+                v-else-if="field.fill_mode === 'fixed'"
+                v-model="field.fixed_value"
+                placeholder="固定值"
+                size="small"
+              />
 
               <!-- 自增 -->
               <div v-if="field.fill_mode === 'auto_increment'" class="inline-config">
@@ -68,8 +91,52 @@
                 <el-input-number v-model="field.step" :min="1" size="small" controls-position="right" />
               </div>
 
-              <!-- 随机 -->
-              <el-button v-if="field.fill_mode === 'random'" size="small" @click="openRandomConfig(table, fi)">
+              <!-- 随机：日期/日期时间类型直接展开日期范围选择器 -->
+              <div v-if="field.fill_mode === 'random' && (field.data_type === 'date' || field.data_type === 'datetime')" class="inline-date-range">
+                <span class="range-label">起</span>
+                <el-date-picker
+                  v-if="field.data_type === 'date'"
+                  v-model="field.random_rule.start_date"
+                  type="date"
+                  value-format="YYYY-MM-DD"
+                  placeholder="起始日期"
+                  size="small"
+                  class="range-picker"
+                />
+                <el-date-picker
+                  v-else
+                  v-model="field.random_rule.start_date"
+                  type="datetime"
+                  value-format="YYYY-MM-DD HH:mm:ss"
+                  placeholder="起始日期时间"
+                  size="small"
+                  class="range-picker"
+                />
+                <span class="range-label">止</span>
+                <el-date-picker
+                  v-if="field.data_type === 'date'"
+                  v-model="field.random_rule.end_date"
+                  type="date"
+                  value-format="YYYY-MM-DD"
+                  placeholder="结束日期"
+                  size="small"
+                  class="range-picker"
+                />
+                <el-date-picker
+                  v-else
+                  v-model="field.random_rule.end_date"
+                  type="datetime"
+                  value-format="YYYY-MM-DD HH:mm:ss"
+                  placeholder="结束日期时间"
+                  size="small"
+                  class="range-picker"
+                />
+              </div>
+              <el-button
+                v-else-if="field.fill_mode === 'random'"
+                size="small"
+                @click="openRandomConfig(table, fi)"
+              >
                 {{ formatRandomRule(field.random_rule) }}
               </el-button>
 
@@ -338,7 +405,7 @@ function removeVariable(index) {
 function onFillModeChange(field) {
   if (field.fill_mode === 'random' && !field.random_rule) {
     field.random_rule = {
-      type: field.data_type === 'number' ? 'int' : (field.data_type === 'date' ? 'date' : 'string'),
+      type: field.data_type === 'number' ? 'int' : (field.data_type === 'date' ? 'date' : (field.data_type === 'datetime' ? 'datetime' : 'string')),
       min_val: 0, max_val: 100, decimal_places: 2, length: 10, charset: 'mixed',
       prefix: '', suffix: '', start_date: '2020-01-01', end_date: '2026-12-31',
       date_format: '%Y-%m-%d', enum_values: ['选项1', '选项2', '选项3']
@@ -572,6 +639,29 @@ function copySQL() {
   width: 90px;
 }
 
+/* 固定值：日期选择器宽度 */
+.fixed-date-picker {
+  width: 100%;
+}
+
+/* 随机：日期范围内联选择器 */
+.inline-date-range {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.range-label {
+  font-size: 13px;
+  color: #666;
+  flex-shrink: 0;
+}
+
+.range-picker {
+  width: 150px;
+}
+
 .add-field-btn {
   margin-top: 8px;
 }
@@ -677,6 +767,15 @@ function copySQL() {
   }
 
   .action-bar .el-button {
+    width: 100%;
+  }
+
+  .inline-date-range {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .range-picker {
     width: 100%;
   }
 }
