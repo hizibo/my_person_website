@@ -85,10 +85,10 @@ pipeline {
                     echo "📦 重建服务: $SERVICES"
 
                     # 先清理所有容器（含依赖），再重建
-                    docker-compose down --remove-orphans || true
+                    /usr/local/bin/docker-compose down --remove-orphans || true
                     # 移除不属于当前 compose 项目的残留容器
                     docker rm -f website-mysql website-backend website-frontend website-python-tools 2>/dev/null || true
-                    docker-compose up -d --build $SERVICES
+                    /usr/local/bin/docker-compose up -d --build $SERVICES
                 '''
             }
         }
