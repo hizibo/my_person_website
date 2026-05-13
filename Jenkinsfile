@@ -4,7 +4,6 @@ pipeline {
     environment {
         PROJECT_DIR = '/opt/my-toolbox'
         SERVER_IP   = '175.178.98.241'
-        PATH = '/usr/local/bin:' + env.PATH
     }
 
     // 构建参数
