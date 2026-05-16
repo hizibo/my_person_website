@@ -95,7 +95,7 @@ def extract_cases_from_content(node: dict, path: list = None) -> list:
     return cases
 
 
-def build_test_case(path: list) -> dict | None:
+def build_test_case(path: list) ->  Optional[dict]:
     """
     根据路径构建测试用例
 

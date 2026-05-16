@@ -12,3 +12,9 @@ __pycache__/
 .idea/
 .vscode/
 *.iml
+
+# 测试平台
+python-services/test-engine/config/secrets.yaml
+python-services/test-engine/reports/
+python-services/test-engine/logs/
+python-services/test-engine/**/allure-results/

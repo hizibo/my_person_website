@@ -300,12 +300,18 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive } from 'vue'
+import { ref, computed, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Back, Plus, Search, Refresh } from '@element-plus/icons-vue'
 import { UploadFilled } from '@element-plus/icons-vue'
 import { CircleCheck, CircleClose } from '@element-plus/icons-vue'
+import axios from 'axios'
 
+// ========== API 基础路径（通过 Nginx 直连 Python 引擎） ==========
+const API = '/api/tool/test-engine'
+const WS_BASE = `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws/test-engine`
+
+// ========== 状态 ==========
 const activeTab = ref('swagger')
 const swaggerUrl = ref('')
 const importing = ref(false)
@@ -315,6 +321,7 @@ const showReportDetail = ref(false)
 const currentReport = ref(null)
 const executing = ref(false)
 const executionDone = ref(false)
+const currentTaskId = ref('')
 
 const env = ref('test')
 const reportFormat = ref('allure')
@@ -324,24 +331,10 @@ const caseModule = ref('')
 const reportModule = ref('')
 const reportStatus = ref('')
 
-const testCases = ref([
-  { id: 1, name: '管理员正确登录', module: 'login', method: 'POST', path: '/api/auth/login' },
-  { id: 2, name: '密码错误登录', module: 'login', method: 'POST', path: '/api/auth/login' },
-  { id: 3, name: '未登录访问接口', module: 'login', method: 'GET', path: '/api/note/list' },
-  { id: 4, name: '创建笔记', module: 'note', method: 'POST', path: '/api/note/add' },
-  { id: 5, name: '查询笔记列表', module: 'note', method: 'GET', path: '/api/note/list' },
-  { id: 6, name: '更新笔记', module: 'note', method: 'PUT', path: '/api/note/update' },
-  { id: 7, name: '删除笔记', module: 'note', method: 'DELETE', path: '/api/note/delete' },
-  { id: 8, name: 'XMind 解析', module: 'tool', method: 'POST', path: '/api/tool/xmind/parse' },
-  { id: 9, name: '批量数据生成', module: 'tool', method: 'POST', path: '/api/tool/datagen/generate' },
-  { id: 10, name: '创建计划', module: 'plan', method: 'POST', path: '/api/plan/add' },
-])
-
-const reports = ref([
-  { id: 1, name: '登录模块测试', time: '2026-05-16 14:23', total: 3, passed: 3, failed: 0, rate: 100, module: 'login' },
-  { id: 2, name: '笔记模块测试', time: '2026-05-16 14:15', total: 4, passed: 3, failed: 1, rate: 75, module: 'note' },
-  { id: 3, name: '工具模块测试', time: '2026-05-16 14:00', total: 2, passed: 2, failed: 0, rate: 100, module: 'tool' },
-])
+const testCases = ref([])
+const reports = ref([])
+const loadingCases = ref(false)
+const loadingReports = ref(false)
 
 const newCase = reactive({
   name: '',
@@ -353,34 +346,100 @@ const newCase = reactive({
   assertions: ''
 })
 
+// ========== 初始化 ==========
+onMounted(() => {
+  loadCases()
+  loadReports()
+})
+
+// ========== 用例管理（真实 API） ==========
+const loadCases = async () => {
+  loadingCases.value = true
+  try {
+    const resp = await axios.get(`${API}/cases`, {
+      params: { module: caseModule.value || undefined, search: caseSearch.value || undefined }
+    })
+    testCases.value = resp.data.cases || []
+  } catch (e) {
+    console.error('加载用例失败', e)
+    // 静默失败，保留旧数据
+  } finally {
+    loadingCases.value = false
+  }
+}
+
 const filteredCases = computed(() => {
   return testCases.value.filter(c => {
-    const matchSearch = !caseSearch.value || c.name.includes(caseSearch.value) || c.path.includes(caseSearch.value)
+    const matchSearch = !caseSearch.value || c.name.includes(caseSearch.value) || (c.path || '').includes(caseSearch.value)
     const matchModule = !caseModule.value || c.module === caseModule.value
     return matchSearch && matchModule
   })
 })
 
-const executionItems = ref([])
-const executedCount = ref(0)
-
-const progressPercent = computed(() => {
-  if (!selectedCases.value.length) return 0
-  return Math.round((executedCount.value / selectedCases.value.length) * 100)
-})
-
-const progressColor = computed(() => {
-  const p = progressPercent.value
-  if (p < 50) return '#f56c6c'
-  if (p < 80) return '#e6a23c'
-  return '#67c23a'
-})
-
-const methodColor = (method) => {
-  const map = { GET: '', POST: 'warning', PUT: 'info', DELETE: 'danger', PATCH: 'warning' }
-  return map[method] || ''
+const saveCase = async () => {
+  if (!newCase.name || !newCase.module) {
+    ElMessage.warning('请填写用例名称和所属模块')
+    return
+  }
+  try {
+    const resp = await axios.post(`${API}/cases`, {
+      name: newCase.name,
+      module: newCase.module,
+      method: newCase.method || 'GET',
+      path: newCase.path,
+      headers: newCase.headers,
+      params: newCase.params,
+      assertions: newCase.assertions,
+    })
+    ElMessage.success('用例创建成功')
+    showAddCase.value = false
+    Object.assign(newCase, { name: '', module: '', method: '', path: '', params: '', assertions: '' })
+    await loadCases()
+  } catch (e) {
+    ElMessage.error('创建失败: ' + (e.response?.data?.detail || e.message))
+  }
 }
 
+const editCase = (row) => {
+  Object.assign(newCase, {
+    name: row.name || '',
+    module: row.module || '',
+    method: row.method || 'GET',
+    path: row.path || '',
+    headers: row.headers || '{"Content-Type": "application/json"}',
+    params: row.params || '',
+    assertions: row.assertions || ''
+  })
+  showAddCase.value = true
+}
+
+const deleteCase = async (row) => {
+  try {
+    await axios.delete(`${API}/cases/${row.id}`)
+    testCases.value = testCases.value.filter(c => c.id !== row.id)
+    ElMessage.success('用例已删除')
+  } catch (e) {
+    ElMessage.error('删除失败: ' + (e.response?.data?.detail || e.message))
+  }
+}
+
+const runCase = async (row) => {
+  try {
+    const resp = await axios.post(`${API}/execute`, {
+      module: row.module || 'api',
+      case_ids: [String(row.id)],
+      priority: 'P1',
+    })
+    const taskId = resp.data.task_id
+    ElMessage.success(`任务已提交: ${taskId}`)
+    activeTab.value = 'execute'
+    openWebSocket(taskId)
+  } catch (e) {
+    ElMessage.error('执行失败: ' + (e.response?.data?.detail || e.message))
+  }
+}
+
+// ========== Swagger 导入 ==========
 const importSwagger = async () => {
   if (!swaggerUrl.value.trim()) {
     ElMessage.warning('请输入 Swagger URL')
@@ -388,40 +447,36 @@ const importSwagger = async () => {
   }
   importing.value = true
   try {
-    // 模拟解析过程
-    await new Promise(r => setTimeout(r, 1500))
-    // 模拟解析结果
-    parsedApis.value = [
-      { method: 'GET', path: '/api/note/list', summary: '查询笔记列表' },
-      { method: 'POST', path: '/api/note/add', summary: '创建笔记' },
-      { method: 'PUT', path: '/api/note/update', summary: '更新笔记' },
-      { method: 'DELETE', path: '/api/note/delete', summary: '删除笔记' },
-      { method: 'GET', path: '/api/plan/list', summary: '查询计划列表' },
-      { method: 'POST', path: '/api/plan/add', summary: '创建计划' },
-      { method: 'POST', path: '/api/auth/login', summary: '管理员登录' },
-      { method: 'GET', path: '/api/favorite/list', summary: '查询收藏列表' },
-    ]
-    ElMessage.success('解析成功，共 8 个接口')
-  } catch {
-    ElMessage.error('解析失败，请检查 URL 是否可访问')
+    const resp = await axios.post(`${API}/swagger/parse-url`, { url: swaggerUrl.value.trim() })
+    parsedApis.value = resp.data.apis || []
+    ElMessage.success(resp.data.message || `解析成功，共 ${parsedApis.value.length} 个接口`)
+  } catch (e) {
+    ElMessage.error('解析失败: ' + (e.response?.data?.detail || e.message))
   } finally {
     importing.value = false
   }
 }
 
-const onSwaggerFileChange = (file) => {
-  const reader = new FileReader()
-  reader.onload = (e) => {
+const onSwaggerFileChange = async (file) => {
+  const formData = new FormData()
+  formData.append('file', file.raw)
+  try {
+    const resp = await axios.post(`${API}/swagger/parse-file`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+    parsedApis.value = resp.data.apis || []
+    ElMessage.success(resp.data.message || `文件解析成功，共 ${parsedApis.value.length} 个接口`)
+  } catch (e) {
+    // 回退：客户端 JSON 解析
     try {
-      const data = JSON.parse(e.target.result)
-      const apis = extractApisFromSwagger(data)
-      parsedApis.value = apis
-      ElMessage.success(`文件解析成功，共 ${apis.length} 个接口`)
+      const text = await file.raw.text()
+      const data = JSON.parse(text)
+      parsedApis.value = extractApisFromSwagger(data)
+      ElMessage.success(`客户端解析成功，共 ${parsedApis.value.length} 个接口`)
     } catch {
-      ElMessage.error('文件格式错误，请上传 Swagger JSON/YAML 文件')
+      ElMessage.error('文件解析失败: ' + (e.response?.data?.detail || '格式不支持'))
     }
   }
-  reader.readAsText(file.raw)
 }
 
 const extractApisFromSwagger = (data) => {
@@ -441,13 +496,25 @@ const extractApisFromSwagger = (data) => {
   return apis
 }
 
-const generateCase = (api) => {
-  ElMessage.success(`已生成用例：${api.summary || api.path}`)
+const generateCase = async (api) => {
+  try {
+    const resp = await axios.post(`${API}/swagger/generate-cases`, { apis: [api] })
+    ElMessage.success(resp.data.message || '用例已生成')
+    await loadCases()
+  } catch (e) {
+    ElMessage.error('生成失败: ' + (e.response?.data?.detail || e.message))
+  }
 }
 
-const generateAllCases = () => {
-  ElMessage.success(`已批量生成 ${parsedApis.value.length} 个测试用例`)
-  parsedApis.value = []
+const generateAllCases = async () => {
+  try {
+    const resp = await axios.post(`${API}/swagger/generate-cases`, { apis: parsedApis.value })
+    ElMessage.success(resp.data.message || `已批量生成用例`)
+    parsedApis.value = []
+    await loadCases()
+  } catch (e) {
+    ElMessage.error('批量生成失败: ' + (e.response?.data?.detail || e.message))
+  }
 }
 
 const clearParsed = () => {
@@ -455,30 +522,26 @@ const clearParsed = () => {
   swaggerUrl.value = ''
 }
 
-const saveCase = () => {
-  if (!newCase.name || !newCase.module) {
-    ElMessage.warning('请填写用例名称和所属模块')
-    return
-  }
-  const id = testCases.value.length + 1
-  testCases.value.push({ id, ...newCase })
-  showAddCase.value = false
-  Object.assign(newCase, { name: '', module: '', method: '', path: '', params: '', assertions: '' })
-  ElMessage.success('用例创建成功')
-}
+// ========== 执行测试（真实 API + WebSocket） ==========
+const executionItems = ref([])
+const executedCount = ref(0)
+let ws = null
 
-const editCase = (row) => {
-  ElMessage.info('编辑功能开发中')
-}
+const progressPercent = computed(() => {
+  if (!selectedCases.value.length) return 0
+  return Math.round((executedCount.value / selectedCases.value.length) * 100)
+})
 
-const deleteCase = (row) => {
-  const idx = testCases.value.findIndex(c => c.id === row.id)
-  if (idx !== -1) testCases.value.splice(idx, 1)
-  ElMessage.success('用例已删除')
-}
+const progressColor = computed(() => {
+  const p = progressPercent.value
+  if (p < 50) return '#f56c6c'
+  if (p < 80) return '#e6a23c'
+  return '#67c23a'
+})
 
-const runCase = (row) => {
-  ElMessage.success(`执行用例：${row.name}`)
+const methodColor = (method) => {
+  const map = { GET: '', POST: 'warning', PUT: 'info', DELETE: 'danger', PATCH: 'warning' }
+  return map[method] || ''
 }
 
 const startExecution = async () => {
@@ -491,45 +554,155 @@ const startExecution = async () => {
   executedCount.value = 0
   executionItems.value = selectedCases.value.map(id => {
     const c = testCases.value.find(tc => tc.id === id)
-    return { id, name: c?.name || id, status: 'pending' }
+    return { id, name: c?.name || String(id), status: 'pending' }
   })
 
-  for (let i = 0; i < executionItems.value.length; i++) {
-    const item = executionItems.value[i]
-    item.status = 'running'
-    await new Promise(r => setTimeout(r, 600))
-    const pass = Math.random() > 0.2
-    item.status = pass ? 'pass' : 'fail'
-    executedCount.value++
+  try {
+    // 确定模块（取选中用例最多的 module）
+    const modules = {}
+    selectedCases.value.forEach(id => {
+      const c = testCases.value.find(tc => tc.id === id)
+      if (c) modules[c.module] = (modules[c.module] || 0) + 1
+    })
+    const mainModule = Object.entries(modules).sort((a, b) => b[1] - a[1])[0]?.[0] || 'api'
+
+    const resp = await axios.post(`${API}/execute`, {
+      module: mainModule,
+      case_ids: selectedCases.value.map(String),
+      env: env.value,
+      priority: 'P1',
+    })
+    const taskId = resp.data.task_id
+    currentTaskId.value = taskId
+    ElMessage.success(`任务已提交: ${taskId}`)
+
+    // 启动 WebSocket 监听实时进度
+    openWebSocket(taskId)
+  } catch (e) {
+    executing.value = false
+    ElMessage.error('执行失败: ' + (e.response?.data?.detail || e.message))
   }
-  executing.value = false
-  executionDone.value = true
-  ElMessage.success('执行完成，请查看报告')
 }
 
-const stopExecution = () => {
-  executing.value = false
-  ElMessage.warning('已停止执行')
+const openWebSocket = (taskId) => {
+  if (ws) { ws.close(); ws = null }
+
+  const url = `${WS_BASE}/${taskId}`
+  ws = new WebSocket(url)
+
+  ws.onopen = () => {
+    console.log('[WS] connected', taskId)
+  }
+
+  ws.onmessage = (event) => {
+    try {
+      const msg = JSON.parse(event.data)
+      if (msg.type === 'log') {
+        // 从日志行解析 pytest 结果
+        const line = msg.line || ''
+        const testMatch = line.match(/^(test_\w+)\s+(PASSED|FAILED|ERROR|SKIPPED)/)
+        if (testMatch) {
+          const testName = testMatch[1]
+          const testStatus = testMatch[2].toLowerCase()
+          const item = executionItems.value.find(it =>
+            it.name.includes(testName) || testName.includes(it.name.replace(/\s/g, '_'))
+          )
+          if (item) {
+            item.status = testStatus === 'passed' ? 'pass' : testStatus === 'failed' ? 'fail' : testStatus
+            if (item.status !== 'pending' && item.status !== 'running') {
+              executedCount.value++
+            }
+          }
+        }
+        // 执行完成
+        if (line.includes('passed') && (line.includes('failed') || line.includes('==='))) {
+          executing.value = false
+          executionDone.value = true
+          ws.close()
+          ws = null
+        }
+      } else if (msg.type === 'status' || msg.data) {
+        const data = msg.data || msg
+        if (data.status === 'pass' || data.status === 'fail' || data.status === 'stopped') {
+          executing.value = false
+          executionDone.value = true
+          if (data.result) {
+            executedCount.value = data.result.total || executedCount.value
+          }
+          ws.close()
+          ws = null
+          // 刷新报告列表
+          loadReports()
+        }
+      }
+    } catch {}
+  }
+
+  ws.onerror = () => {
+    console.error('[WS] error')
+  }
+
+  ws.onclose = () => {
+    console.log('[WS] closed')
+  }
 }
 
-const loadReports = () => {
-  ElMessage.success('报告已刷新')
+const stopExecution = async () => {
+  if (!currentTaskId.value) return
+  try {
+    await axios.post(`${API}/stop/${currentTaskId.value}`)
+    ElMessage.warning('已停止执行')
+    executing.value = false
+    if (ws) { ws.close(); ws = null }
+  } catch (e) {
+    ElMessage.error('停止失败: ' + (e.response?.data?.detail || e.message))
+  }
 }
 
-const viewReport = (row) => {
-  currentReport.value = {
-    ...row,
-    details: [
-      { name: '管理员正确登录', result: 'pass', duration: 234 },
-      { name: '密码错误登录', result: 'pass', duration: 189 },
-      { name: '未登录访问接口', result: 'fail', duration: 56, error: '预期 code=401，实际 code=200' },
-    ]
+// ========== 报告查看 ==========
+const loadReports = async () => {
+  loadingReports.value = true
+  try {
+    const resp = await axios.get(`${API}/reports`)
+    reports.value = resp.data.reports || []
+  } catch (e) {
+    console.error('加载报告失败', e)
+  } finally {
+    loadingReports.value = false
+  }
+}
+
+const viewReport = async (row) => {
+  try {
+    const resp = await axios.get(`${API}/report/${row.id}`)
+    const data = resp.data
+    currentReport.value = {
+      id: data.id,
+      name: data.name,
+      total: data.result?.total || 0,
+      passed: data.result?.passed || 0,
+      failed: data.result?.failed || 0,
+      rate: data.result?.pass_rate || 0,
+      time: new Date(data.created_at * 1000).toLocaleString(),
+      status: data.status,
+      details: (data.logs || []).filter(l => l.includes('PASSED') || l.includes('FAILED')).map(l => {
+        const m = l.match(/^(test_\S+)\s+(PASSED|FAILED)/) || []
+        return { name: m[1] || l.substring(0, 60), result: (m[2] || 'pass').toLowerCase(), duration: 0 }
+      })
+    }
+  } catch (e) {
+    // 回退：构建基本报告信息
+    currentReport.value = {
+      ...row,
+      details: []
+    }
   }
   showReportDetail.value = true
 }
 
 const downloadReport = (row) => {
-  ElMessage.info('下载功能开发中')
+  const url = `${API}/report/${row.id}/download`
+  window.open(url, '_blank')
 }
 </script>
 

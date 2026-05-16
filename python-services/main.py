@@ -7,8 +7,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from xmind_parser.main import router as xmind_router
 from data_generator.main import router as datagen_router
+from test_engine.engine import router as test_engine_router
 
-app = FastAPI(title="Python工具服务", version="2.0.0")
+app = FastAPI(title="Python工具服务", version="2.1.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -21,11 +22,12 @@ app.add_middleware(
 # 挂载各工具路由
 app.include_router(xmind_router, prefix="/xmind", tags=["XMind解析"])
 app.include_router(datagen_router, prefix="/datagen", tags=["批量数据生成"])
+app.include_router(test_engine_router, prefix="/test-engine", tags=["测试引擎"])
 
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "service": "python-tools", "modules": ["xmind", "datagen"]}
+    return {"status": "ok", "service": "python-tools", "modules": ["xmind", "datagen", "test-engine"]}
 
 
 if __name__ == "__main__":
