@@ -99,6 +99,24 @@ const localTools = [
     description: 'JSON 数据格式化、压缩、校验',
     route: '/tools/json',
     status: 'online'
+  },
+  {
+    id: 'test-platform-v2',
+    name: '测试平台 V2.0',
+    icon: '🚀',
+    category: '测试平台',
+    description: '接口自动化测试平台，支持 Swagger 文档导入、自动生成用例、直接调用测试引擎',
+    route: '/tools/test-platform-v2',
+    status: 'online'
+  },
+  {
+    id: 'test-platform-v3',
+    name: '测试平台 V3.0',
+    icon: '🛠️',
+    category: '测试平台',
+    description: '用例管理平台，支持 metersphere 等平台对接，统一管控测试引擎',
+    route: '/tools/test-platform-v3',
+    status: 'online'
   }
 ]
 

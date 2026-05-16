@@ -66,6 +66,16 @@ const routes = [
         component: () => import('@/views/tools/BatchDataGen.vue')
       },
       {
+        path: 'tools/test-platform-v2',
+        name: 'TestPlatformV2',
+        component: () => import('@/views/tools/TestPlatformV2.vue')
+      },
+      {
+        path: 'tools/test-platform-v3',
+        name: 'TestPlatformV3',
+        component: () => import('@/views/tools/TestPlatformV3.vue')
+      },
+      {
         path: 'permission',
         name: 'Permission',
         component: () => import('@/views/permission/Permission.vue')
