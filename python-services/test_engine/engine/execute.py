@@ -31,7 +31,7 @@ async def run_tests(task: Task) -> None:
     env = opts.get("env", "dev")
 
     # 构建 pytest 命令
-    cmd = ["pytest"]
+    cmd = ["/usr/local/bin/pytest"]
 
     if test_path:
         target = _ENGINE_ROOT / test_path
