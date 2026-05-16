@@ -13,8 +13,8 @@ from fastapi import APIRouter, HTTPException, UploadFile, File, WebSocket, WebSo
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 
-from engine.task_queue import Task, TaskStatus, TaskPriority, get_queue
-from engine.swagger_parser import SwaggerParser, parser as swagger_parser
+from test_engine.engine.task_queue import Task, TaskStatus, TaskPriority, get_queue
+from test_engine.engine.swagger_parser import SwaggerParser, parser as swagger_parser
 
 router = APIRouter(tags=["测试引擎"])
 _ENGINE_ROOT = Path(__file__).parent.parent
@@ -173,7 +173,7 @@ async def start_execute(body: ExecuteRequest):
     )
 
     async def coro(t: Task):
-        from engine.execute import run_tests
+        from test_engine.engine.execute import run_tests
         await run_tests(t)
 
     task_id = await q.submit(task, coro)

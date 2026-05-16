@@ -10,7 +10,7 @@ import time
 from pathlib import Path
 from typing import Optional
 
-from engine.task_queue import Task, TaskStatus, get_queue
+from test_engine.engine.task_queue import Task, TaskStatus, get_queue
 
 _ENGINE_ROOT = Path(__file__).parent.parent
 

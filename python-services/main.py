@@ -2,6 +2,10 @@
 Python 工具服务 - 统一入口
 所有工具路由在此挂载，后续新增工具只需添加 router 模块
 """
+import sys
+import os
+# 确保 test_engine 作为包可被导入
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
