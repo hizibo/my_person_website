@@ -5,6 +5,7 @@
 import asyncio
 import json
 import os
+import re
 import subprocess
 import time
 from pathlib import Path
@@ -45,6 +46,7 @@ async def run_tests(task: Task) -> None:
         cmd.extend(["-k", " or ".join(case_filter)])
 
     task.result["command"] = " ".join(cmd)
+    task.logs.append(f"[执行] {' '.join(cmd)}")
 
     # 执行
     env_vars = {**os.environ, "TEST_ENV": env, "PYTHONPATH": str(_ENGINE_ROOT)}
@@ -58,27 +60,38 @@ async def run_tests(task: Task) -> None:
     )
 
     task.result["pid"] = proc.pid
+    task.logs.append(f"[启动] PID={proc.pid}")
 
-    # 流式读取 stdout
-    while True:
-        line = await proc.stdout.readline()
-        if not line:
-            break
-        text = line.decode("utf-8", errors="replace").rstrip()
-        if text:
-            task.logs.append(text)
-            # 推送通知
-            _notify_progress(task, text)
+    # 流式读取 stdout 和 stderr
+    async def read_stream(stream, label):
+        while True:
+            try:
+                line = await asyncio.wait_for(stream.readline(), timeout=60)
+            except asyncio.TimeoutError:
+                task.logs.append(f"[{label}] 无输出 60s，可能卡住")
+                continue
+            if not line:
+                break
+            text = line.decode("utf-8", errors="replace").rstrip()
+            if text:
+                task.logs.append(f"[{label}] {text}")
+                _notify_progress(task, text)
 
-    # 等待完成
-    await proc.wait()
-    stderr_text = (await proc.stderr.read()).decode("utf-8", errors="replace")
+    # 同时读取 stdout 和 stderr
+    await asyncio.gather(
+        read_stream(proc.stdout, "OUT"),
+        read_stream(proc.stderr, "ERR"),
+    )
+
+    # 等待进程结束
+    return_code = await proc.wait()
+    task.result["exit_code"] = return_code
+    task.logs.append(f"[完成] exit_code={return_code}")
 
     # 解析 pytest 输出
     total, passed, failed, errors, skipped = _parse_pytest_summary(task.logs)
 
     task.result.update({
-        "exit_code": proc.returncode,
         "total": total,
         "passed": passed,
         "failed": failed,
@@ -87,49 +100,52 @@ async def run_tests(task: Task) -> None:
         "pass_rate": round(passed / total * 100, 2) if total > 0 else 0,
     })
 
-    if proc.returncode == 0:
+    if return_code == 0:
         task.status = TaskStatus.PASS
     else:
         task.status = TaskStatus.FAIL
-        task.result["stderr_tail"] = stderr_text[-1000:]
 
     task.finished_at = time.time()
     get_queue()._notify(task)
 
 
+def _notify_progress(task: Task, line: str):
+    """将日志行推送给 WebSocket 订阅者"""
+    queue = get_queue()
+    payload = {
+        "type": "log",
+        "task_id": task.id,
+        "line": line,
+        "status": task.status.value,
+    }
+    for sub in queue._subscribers.get(task.id, []):
+        try:
+            sub.put_nowait(payload)
+        except asyncio.QueueFull:
+            pass
+
+
 def _parse_pytest_summary(logs: list[str]) -> tuple:
-    """从日志中解析 pytest 汇总行"""
-    total = passed = failed = errors = skipped = 0
+    """从日志中解析 pytest 汇总行，返回 (total, passed, failed, errors, skipped)"""
+    total = passed = failed = errors = skipped = -1  # -1 表示未解析到
     for line in reversed(logs):
-        if "=" in line and ("passed" in line or "failed" in line):
+        if "=" in line and ("passed" in line or "failed" in line or "error" in line):
             # e.g. "====== 5 passed, 1 failed, 2 warnings in 10.23s ======"
             m = re.findall(r'(\d+)\s+(\w+)', line)
             for count, status in m:
                 c = int(count)
-                if status == "passed":
+                if status in ("passed", "pass"):
                     passed = c
-                elif status == "failed":
+                elif status in ("failed", "fail"):
                     failed = c
-                elif status == "error" or status == "errors":
+                elif status in ("error", "errors"):
                     errors = c
-                elif status == "skipped":
+                elif status in ("skipped", "skip"):
                     skipped = c
-            total = passed + failed + errors + skipped
+            if passed >= 0 or failed >= 0:
+                total = (passed if passed >= 0 else 0) + (failed if failed >= 0 else 0) + (errors if errors >= 0 else 0) + (skipped if skipped >= 0 else 0)
             break
+    # 如果解析失败，尝试从 result 中推断
+    if total < 0:
+        total = passed = failed = errors = skipped = 0
     return total, passed, failed, errors, skipped
-
-
-def _notify_progress(task: Task, line: str):
-    """将日志行推送给 WebSocket 订阅者"""
-    import re
-    queue = get_queue()
-    for sub in queue._subscribers.get(task.id, []):
-        try:
-            sub.put_nowait({
-                "type": "log",
-                "task_id": task.id,
-                "line": line,
-                "status": task.status.value,
-            })
-        except asyncio.QueueFull:
-            pass
